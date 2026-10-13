@@ -1,0 +1,124 @@
+{
+ "甜妹": {
+  "img": "a/v8card_0.webp",
+  "cut": "a/v8cut_0.webp",
+  "anima_id": "anima_1785572045772367975",
+  "style_name": "Sunny Vivid Cel",
+  "char": "兽娘-04",
+  "no": "少女题材-兽娘_04",
+  "record": "recvrkzPXH6w20",
+  "model": "Anima"
+ },
+ "少女": {
+  "img": "a/v8card_1.webp",
+  "cut": "a/v8cut_1.webp",
+  "anima_id": "anima_1785572045772359975",
+  "style_name": "Soft Wavy Anime",
+  "char": "虚拟偶像-12",
+  "no": "少女题材-虚拟偶像_12",
+  "record": "recvrkzPXHkN1k",
+  "model": "Anima"
+ },
+ "御姐": {
+  "img": "a/v8card_2.webp",
+  "cut": "a/v8cut_2.webp",
+  "anima_id": "anima_1785572045772350975",
+  "style_name": "Moody Blue Paint",
+  "char": "（风衣御姐，现跑未入库）",
+  "no": "",
+  "record": "",
+  "model": "Anima",
+  "note": "10-08 木木夕从现跑候选里选的御姐15"
+ },
+ "奶系": {
+  "img": "a/v8card_3.webp",
+  "cut": "a/v8cut_3.webp",
+  "anima_id": "anima_1785572045772367975",
+  "style_name": "Sunny Vivid Cel",
+  "char": "（假小子画风现跑，未入库）",
+  "no": "",
+  "record": "",
+  "model": "Anima",
+  "note": "10-08 木木夕：正太试假小子画风；角色库没有 Anima 正太，卡片是用该风格现跑的"
+ },
+ "少年": {
+  "img": "a/v8card_4.webp",
+  "cut": "a/v8cut_4.webp",
+  "anima_id": "anima_1785572045772220975",
+  "xl_id": null,
+  "style_name": "Blue Veil Paint",
+  "char": "tag底图同款少年",
+  "no": "少年正太·211-084",
+  "record": "recvrj0SICscr4",
+  "model": "Anima",
+  "note": "10-09 木木夕：少年卡片和首推画风换成 tag 底图 D2 的 Blue Veil Paint"
+ },
+ "熟男": {
+  "img": "a/v8card_5.webp",
+  "cut": "a/v8cut_5.webp",
+  "anima_id": "anima_1785572045772284975",
+  "style_name": "Deep Shadow Tone",
+  "char": "炼金男爵",
+  "no": "男性Anima·绅士-炼金男爵_0",
+  "record": "recvroWYx6M1ev",
+  "model": "Anima"
+ },
+ "Furry": {
+  "img": "a/v8card_6.webp",
+  "cut": "a/v8cut_6.webp",
+  "anima_id": null,
+  "xl_id": "S64",
+  "style_name": "Kusa-XL · style64",
+  "char": "Rowan Snow",
+  "no": "异种furry-061",
+  "record": "recvrlqAoeZs0M",
+  "model": "Kusa-XL",
+  "note": "10-08 木木夕选：选中上架角色 Furry58"
+ },
+ "异种": {
+  "img": "a/v8card_7.webp",
+  "cut": "a/v8cut_7.webp",
+  "anima_id": "anima_1785572045772296975",
+  "style_name": "Sharp Dusk Mood",
+  "char": "Sophia Stone",
+  "no": "异头怪物·试点-怪物_蛇尾娘_Sharp_Dusk_Mood_0",
+  "record": "recvrku4PWzJC7",
+  "model": "Anima",
+  "note": "10-08 木木夕选：选中上架角色 异种41"
+ },
+ "假小子": {
+  "img": "a/v8card_8.webp",
+  "cut": "a/v8cut_8.webp",
+  "anima_id": "anima_1785572045772367975",
+  "style_name": "Sunny Vivid Cel",
+  "char": "Jade Sullivan",
+  "no": "假小子重跑-310",
+  "record": "recvrkLczf5d5b",
+  "model": "Anima",
+  "note": "10-09 木木夕选：角色库假2"
+ },
+ "男娘": {
+  "img": "a/v8card_9.webp",
+  "cut": "a/v8cut_9.webp",
+  "anima_id": null,
+  "xl_id": "S70",
+  "style_name": "Kusa-XL · style70",
+  "char": "Gabriel Cross",
+  "no": "0132",
+  "record": "recvrhTXwupgQZ",
+  "model": "Kusa-XL",
+  "note": "10-09 木木夕选：角色库男10"
+ },
+ "赛博格": {
+  "img": "a/v8card_10.webp",
+  "cut": "a/v8cut_10.webp",
+  "anima_id": null,
+  "xl_id": "S70",
+  "style_name": "Kusa-XL · style70",
+  "char": "Casey Collins",
+  "no": "0239",
+  "record": "recvrhTY5UCOln",
+  "model": "Kusa-XL",
+  "note": "10-09 木木夕选：角色库赛博格 C20"
+ }
+}

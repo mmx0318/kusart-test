@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="zh-CN" class="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>角色主页 · KusArt 创建角色测试</title>
+<!-- 10-08 木木夕：照 feat/library-asset-pages-v2 的角色页（components/library/assets/CharacterTopicLayout.tsx）还原，class 基本原样搬过来，用 Tailwind CDN 渲染 -->
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<script>
+tailwind.config={theme:{extend:{fontFamily:{space:['"Space Grotesk"','"Noto Sans SC"','sans-serif'],sans:['"Noto Sans SC"','system-ui','sans-serif']},
+ colors:{foreground:'hsl(var(--foreground) / <alpha-value>)',background:'hsl(var(--background) / <alpha-value>)',card:'hsl(var(--card) / <alpha-value>)'}}}}
+</script>
+<style>
+:root{--background:230 18% 3.5%;--foreground:210 18% 95%;--card:230 16% 7%}   /* 分支 demo 截图是站点深色主题 */
+body{background:hsl(var(--background));color:hsl(var(--foreground))}
+.dark{--foreground:210 18% 95%}
+.lib-accent{--accent:var(--lib-accent)}
+html:not(.dark) .lib-accent{--accent:color-mix(in srgb,var(--lib-accent) 55%,#000)}
+.lib-accent .dark{--accent:var(--lib-accent)}
+@keyframes library-poster-wall{to{transform:translateX(-50%)}}
+@keyframes library-voice-progress{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+details>summary::-webkit-details-marker{display:none}
+/* 10-09 木木夕：立绘点一下 = Q 弹抖动 + 换台词（同唤醒页） */
+#hero.poke{cursor:pointer;transform-origin:50% 100%;-webkit-tap-highlight-color:transparent}
+#hero.jelly{animation:jelly .62s cubic-bezier(.3,1.4,.5,1)}
+@keyframes jelly{0%{transform:scale(1,1)}18%{transform:scale(1.06,.92)}36%{transform:scale(.95,1.07)}54%{transform:scale(1.03,.97)}72%{transform:scale(.99,1.02)}100%{transform:scale(1,1)}}
+#stage.hasHb{padding-top:88px}   /* 立绘往下让出气泡位置，不挡脸 */
+.hb{position:absolute;left:4px;right:4px;margin:0 auto;width:fit-content;top:0;z-index:5;max-width:min(94%,460px);padding:9px 14px;font-size:13px!important;border-radius:16px 16px 16px 4px;background:rgba(255,255,255,.94);color:#111;font-size:14px;line-height:1.5;box-shadow:0 8px 24px rgba(0,0,0,.35);opacity:0;transform:translateY(6px) scale(.96);transform-origin:50% 100%;transition:opacity .25s,transform .3s cubic-bezier(.3,1.4,.5,1);pointer-events:none;min-height:1.5em}
+.hb.pop{opacity:1;transform:none}
+.hb:not(.fin) #hbt::after{content:"▍";opacity:.5;margin-left:1px}
+.pktip{position:absolute;right:8px;top:48%;z-index:5;background:#fff;color:#111;border-radius:999px;padding:4px 12px 4px 30px;font-size:13px;font-weight:700;pointer-events:none;box-shadow:0 3px 10px rgba(0,0,0,.3);opacity:0;animation:pkBob 1.4s ease-in-out 2.4s infinite both;transition:opacity .25s}
+.pktip::before{content:"👆";position:absolute;left:9px;top:50%;transform:translateY(-52%) rotate(-20deg);font-size:15px}
+.pktip.gone{opacity:0!important;animation:none}
+@keyframes pkBob{0%{opacity:1;transform:translateY(0)}50%{opacity:1;transform:translateY(-5px)}100%{opacity:1;transform:translateY(0)}}
+.aig{font-family:"Noto Sans SC";font-size:11px;letter-spacing:0;text-transform:none;color:hsl(var(--foreground)/.4);margin-left:8px}
+/* 10-10 木木夕：「用角色创作」放首屏 —— 手机端立绘压到 54vh，按钮紧跟名字（不再吸底：飞书内置浏览器底栏会把吸底按钮盖住） */
+@media (max-width:767px){.herostage{height:54vh!important}}
+
+
+/* 10-09 木木夕：主页内容作者可编辑 —— 抽屉式编辑器 */
+.edb{margin-left:10px;padding:2px 9px;border:1px solid hsl(var(--foreground)/.2);border-radius:999px;font:500 11px "Noto Sans SC";letter-spacing:0;text-transform:none;color:hsl(var(--foreground)/.75);background:transparent;cursor:pointer;vertical-align:1px}
+.edb:hover{border-color:var(--accent,#f472b6);color:#fff}
+#ed{position:fixed;inset:0;z-index:80;display:none}#ed.on{display:block}
+#ed .mask{position:absolute;inset:0;background:rgba(0,0,0,.55)}
+#ed .pan{position:absolute;right:0;top:0;bottom:0;width:min(560px,100vw);background:#fff;color:#18181b;display:flex;flex-direction:column;box-shadow:-12px 0 40px rgba(0,0,0,.35);animation:edIn .25s ease}
+@keyframes edIn{from{transform:translateX(40px);opacity:0}}
+@media (max-width:767px){#ed .pan{top:6vh;width:100vw;border-radius:18px 18px 0 0;animation:edUp .25s ease}@keyframes edUp{from{transform:translateY(40px);opacity:0}}}
+#ed .hd{display:flex;align-items:center;gap:10px;padding:16px 18px 10px}#ed .hd b{font-size:17px;flex:1}
+#ed .x{border:0;background:#f1f1f3;border-radius:999px;width:32px;height:32px;cursor:pointer;font-size:16px}
+#ed .tabs{display:flex;gap:6px;padding:0 18px 10px;overflow-x:auto;border-bottom:1px solid #eee}
+#ed .tabs button{flex:none;border:1px solid #e4e4e7;background:#fff;border-radius:999px;padding:6px 13px;font:500 13px "Noto Sans SC";cursor:pointer;color:#52525b}
+#ed .tabs button.on{background:#18181b;color:#fff;border-color:#18181b}
+#ed .bd{flex:1;overflow-y:auto;padding:14px 18px 18px}
+#ed label{display:block;font-size:12px;color:#71717a;margin:14px 0 6px}
+#ed input,#ed textarea{width:100%;border:1px solid #e4e4e7;border-radius:10px;padding:9px 11px;font:15px/1.6 "Noto Sans SC";color:#18181b;background:#fafafa}
+#ed textarea{resize:vertical;min-height:72px}
+#ed input:focus,#ed textarea:focus{outline:none;border-color:#d81b60;background:#fff}
+#ed .row{display:grid;grid-template-columns:7.5em 1fr;gap:8px;margin-bottom:8px}
+#ed .row.stack{grid-template-columns:1fr}
+#ed .imgs{display:flex;gap:8px;overflow-x:auto}#ed .imgs img{width:76px;height:108px;object-fit:cover;object-position:top;border-radius:10px;border:2px solid transparent;cursor:pointer;background:#f4f4f5}
+#ed .imgs img.on{border-color:#d81b60}
+#ed .mari{display:flex;gap:8px;align-items:center;margin:4px 0 6px;padding:10px;border-radius:12px;background:#fdf2f8}
+#ed .mari input{flex:1;background:#fff;font-size:13px;padding:7px 10px}
+#ed .mari button{flex:none;border:0;border-radius:999px;background:#d81b60;color:#fff;font:600 13px "Noto Sans SC";padding:8px 13px;cursor:pointer}
+#ed .mari button:disabled{opacity:.55}
+#ed .ft{display:flex;gap:10px;padding:12px 18px calc(12px + env(safe-area-inset-bottom));border-top:1px solid #eee}
+#ed .ft button{flex:1;height:46px;border:0;border-radius:999px;font:600 15px "Noto Sans SC";cursor:pointer}
+#ed .ft .c{background:#f1f1f3;color:#18181b}#ed .ft .s{background:#d81b60;color:#fff}
+#ed .tip{font-size:12px;color:#a1a1aa;margin-top:6px}
+.edtoast{position:fixed;left:50%;bottom:96px;white-space:nowrap;transform:translateX(-50%);z-index:90;background:#18181b;color:#fff;padding:9px 16px;border-radius:999px;font-size:13px}
+.adbtn{display:inline-flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,.28);color:#fff;border-radius:9999px;padding:0 22px;min-height:44px;font-size:14px;font-weight:600;white-space:nowrap;transition:border-color .2s,background .2s}
+.adbtn:hover{border-color:#d81b60;background:rgba(216,27,96,.12)}.adbtn.off{opacity:.4;cursor:not-allowed}.adbtn.off:hover{border-color:rgba(255,255,255,.28);background:none}
+.awbox{position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.8);display:flex;align-items:center;justify-content:center;padding:16px}
+.awin{display:flex;flex-direction:column;gap:10px;max-width:min(900px,100%);max-height:100%;overflow:auto;background:#160a0f;border-radius:14px;padding:12px;color:#f0e6ea}
+.awin img{max-height:70vh;width:auto;max-width:100%;border-radius:10px;margin:0 auto}.awt small{display:block;color:#a98c96;font-size:12px;margin-top:2px}
+.awv{display:block;margin-top:8px;text-align:center;background:#d81b60;color:#fff;border-radius:999px;padding:9px;font-size:13px;font-weight:600}
+.awt pre{white-space:pre-wrap;font-size:11px;color:#cdb;max-height:30vh;overflow:auto}.awt button{margin-top:8px;border:1px solid #3a1c26;border-radius:999px;padding:6px 14px;font-size:12px}
+</style>
+<link rel="stylesheet" href="../plays.css?v=1010y"><script src="../plays.js?v=1010y"></script>
+</head><body class="font-sans antialiased">
+<header class="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-foreground/10 bg-background/90 px-4 backdrop-blur">
+ <a href="../"><img src="../a/logo.png" class="h-6" alt="KusArt"></a><span class="rounded-full bg-foreground px-2.5 py-0.5 text-xs font-bold text-background whitespace-nowrap">角色主页 · 测试</span>
+ <span class="flex-1"></span><button id="edTop" class="mr-2 whitespace-nowrap rounded-full bg-white px-3 py-1 text-sm font-semibold text-black">✎ 编辑</button><a href="../" class="whitespace-nowrap rounded-full border border-foreground/15 px-3 py-1 text-sm">再创建一个</a>
+</header>
+<div id="root" class="px-4 md:px-8"><p class="py-24 text-center text-foreground/50">Mari 正在写主页…（第一次打开旧角色要十几秒）</p></div>
+<script>
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fix=u=>!u?'':/^https?:/.test(u)?u:'../'+u;
+const eyebrow="font-mono text-[11px] uppercase tracking-[0.2em] text-foreground/45";
+const displayTitle="font-space font-medium tracking-[-0.04em]";
+const solidButton="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-foreground px-6 py-2.5 text-center text-sm font-semibold text-background transition-colors hover:bg-foreground/85 sm:whitespace-nowrap";
+const ARROW='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>';
+const DOWN=(n=13)=>`<svg width="${n}" height="${n}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>`;
+const AI='<span class="aig">Mari 写的</span>';const ED=s=>`<button class="edb" data-ed="${s}">✎ 编辑</button>`;
+const id=location.pathname.split('/').filter(Boolean).pop();
+
+function render(c,all){
+ const p=c.profile||{}; const name=c.name; document.title=name+' · KusArt';
+ const hero=fix(c.img), cut=c.cutout?{...c.cutout,src:fix(c.cutout.src)}:null;
+ const posters=(c.images||[]).filter(u=>u!==c.img).map(fix);
+ const roster=[{id:c.id,name,img:c.img,cutout:c.cutout&&c.cutout.src},...all.filter(x=>x.id!==c.id)].slice(0,8);
+ let mode='art';
+ const wall=posters.length>=3?`<div aria-hidden class="absolute -inset-x-1/4 -inset-y-1/4 flex -rotate-[8deg] flex-col justify-center gap-4">${[posters,[...posters].reverse()].map((row,i)=>`<div class="flex w-max gap-4 motion-safe:[animation:library-poster-wall_90s_linear_infinite]" ${i?'style="animation-direction:reverse"':''}>${[...row,...row,...row].map(u=>`<img src="${u}" class="h-[min(46vh,420px)] w-auto rounded-md">`).join('')}</div>`).join('')}</div>`:'';
+
+ const stage=()=>mode==='art'&&cut?`<img id="hero" src="${cut.src}" alt="${esc(name)}" class="poke h-full w-auto object-contain object-bottom drop-shadow-[0_24px_48px_rgba(0,0,0,0.55)]">`
+   :`<div class="flex h-full items-center pb-16 pt-4"><img src="${hero}" class="max-h-full max-w-full w-auto rounded-md shadow-[0_24px_60px_rgba(0,0,0,0.6)] ring-1 ring-white/15"></div>`;
+ // 10-10 木木夕：「成人模式」按钮 → 用这个角色进成人插画生成页；🔴只给成年人设（年龄感 成年/成熟/年长，且不是少女/少年/萝莉/正太/甜妹/奶系）
+ const adMW=([c.name,c.bio,c.desc,c.role].join(' ').match(/少女|少年|萝莉|正太|小女孩|小男孩|幼|童|学生|初中|高中|JK|DK|小学|未成年/)||[])[0];   // 同 adult.py MINOR_W；立绘年龄检查在后端进页面时做
+ const adOK=!adMW&&['成年','成熟','年长'].includes(c.age)&&!['少女','少年','少男','萝莉','正太','甜妹','奶系'].includes(c.type);
+ const ADB=h=>adOK?`<a href="../?adult_oc=${encodeURIComponent(c.id)}" class="adbtn ${h}">成人模式</a>`:`<span class="adbtn off ${h}" title="只有成年人设能进成人模式">成人模式</span>`;
+ const ADT=adOK?'':`<p class="mt-2 text-xs text-white/40">成人模式只对明确成年的角色开放（${adMW?`设定里写着「${esc(adMW)}」`:`${esc(name)} 的年龄感是「${esc(c.age||'未填')}」`}）</p>`;
+ const voice=(p.voice||[]);
+ document.getElementById('root').innerHTML=`
+<div class="lib-accent mx-auto max-w-7xl pb-24 pt-5" style="--lib-accent:${esc(p.accent||'#f472b6')}">
+ <section class="dark relative isolate mt-6 overflow-hidden rounded-2xl bg-[#0c0d12] text-white">
+  <div aria-hidden class="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[75vh] overflow-hidden [mask-image:linear-gradient(to_bottom,black_60%,transparent)] lg:inset-0 lg:h-auto lg:[mask-image:none]"><div id="wall" class="absolute inset-0 transition-opacity duration-700" style="opacity:.5">${wall}</div></div>
+  <div aria-hidden class="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_50%_65%,var(--accent)_0%,transparent_55%)] opacity-20"></div>
+  <div aria-hidden class="absolute inset-0 -z-10 bg-gradient-to-r from-[#0c0d12]/80 via-transparent to-[#0c0d12]/90"></div>
+  <div aria-hidden class="absolute inset-0 -z-10 bg-gradient-to-t from-[#0c0d12] via-transparent to-[#0c0d12]/40"></div>
+  <p aria-hidden class="${displayTitle} pointer-events-none absolute left-1/2 top-6 -z-10 hidden -translate-x-1/2 select-none whitespace-nowrap text-[10rem] uppercase leading-none text-white/[0.05] lg:block">${esc(name)}</p>
+  <div class="flex flex-col lg:grid lg:min-h-[max(660px,min(84vh,800px))] lg:grid-cols-[190px_minmax(0,1fr)_420px]">
+   <nav class="order-3 flex min-w-0 flex-col gap-4 border-t border-white/10 p-6 lg:order-1 lg:border-0 lg:py-10 lg:pl-8 lg:pr-0">
+    <p class="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.2em] text-white/50"><span class="h-px w-5 bg-[var(--accent)]"></span>其他角色</p>
+    <ul class="-mx-1 flex gap-4 overflow-x-auto px-1 pb-1 lg:flex-col lg:gap-3 lg:overflow-visible">${roster.map(x=>{const cur=x.id===c.id;return `<li class="shrink-0"><a href="${x.id}" class="group flex flex-col items-center gap-2 lg:flex-row lg:gap-3">
+      <span class="relative block size-12 shrink-0 overflow-hidden rounded-full bg-white/10 ring-2 transition ${cur?'ring-[var(--accent)]':'ring-white/10 group-hover:ring-white/40'}"><img src="${fix(x.cutout||x.img)}" class="absolute left-1/2 top-0 h-auto ${x.cutout?'w-[260%]':'w-[130%]'} max-w-none -translate-x-1/2"></span>
+      <span class="max-w-20 truncate text-xs lg:max-w-none lg:text-sm ${cur?'text-white':'text-white/55 group-hover:text-white'}">${esc(x.name)}</span></a></li>`}).join('')}</ul>
+    <a href="../" class="mt-auto hidden items-center gap-1.5 text-xs text-white/45 hover:text-white lg:inline-flex">再创建一个 ${ARROW}</a>
+   </nav>
+   <div class="herostage relative order-1 h-[62vh] max-h-[640px] min-w-0 lg:order-2 lg:h-auto lg:max-h-none">
+    <div class="absolute inset-0 px-4 pt-6 lg:pt-8"><div class="relative flex h-full w-full items-end justify-center"><div id="stage" class="${cut&&voice.length?'hasHb ':''}flex h-full w-full items-end justify-center">${stage()}</div>
+     ${cut&&voice.length?`<div id="hb" class="hb"><span id="hbt"></span></div><div id="pk" class="pktip">戳一下</div>`:''}
+     ${cut?`<div class="absolute bottom-4 right-4 z-10 flex gap-1 rounded-full border border-white/15 bg-black/50 p-1 backdrop-blur">${[['art','立绘'],['poster','海报']].map(([m,l])=>`<button data-m="${m}" class="rounded-full px-3 py-1 text-xs transition ${m==='art'?'bg-white text-black':'text-white/70 hover:text-white'}">${l}</button>`).join('')}</div>`:''}</div></div>
+   </div>
+   <div class="relative z-10 order-2 flex min-w-0 flex-col justify-center px-6 pb-8 lg:order-3 lg:py-10 lg:pl-0 lg:pr-10">
+    <div class="mt-5 flex items-center justify-between gap-3"><p class="flex items-center gap-3 font-space text-base text-white/85 md:text-lg"><span aria-hidden class="h-4 w-1 shrink-0 rounded-full bg-[var(--accent)]"></span>${esc(p.epithet||c.role)}</p>${ED('base')}</div>
+    <h1 class="${displayTitle} mt-1 text-balance text-[3rem] leading-[0.92] md:text-[4rem]">${esc(name)}</h1>
+    <div class="mt-4 flex gap-2 md:hidden"><a class="${solidButton} flex-1 justify-center !bg-[#d81b60] !text-white shadow-[0_8px_24px_rgba(216,27,96,.35)] hover:!bg-[#c2185b] md:hidden" href="#plays">用 ${esc(name)} 创作 ${ARROW}</a>${ADB('h-auto')}</div>${ADT}
+    ${(p.attributes||[]).length?`<dl class="mt-5 divide-y divide-white/10 rounded-lg border border-white/10 border-l-2 border-l-[var(--accent)] bg-black/45 text-sm backdrop-blur">${p.attributes.map(a=>`<div class="grid grid-cols-[5.5rem_1fr] gap-3 px-4 py-1.5"><dt class="text-white/45">${esc(a.label)}</dt><dd class="text-white/90">${esc(a.value)}</dd></div>`).join('')}</dl>`:''}
+    ${p.summary?`<p class="mt-6 text-[15px] leading-7 text-white/80">${esc(p.summary)}</p><a href="#story" class="mt-3 inline-flex items-center gap-1.5 self-start text-xs text-white/50 transition-colors hover:text-white">读 ${esc(name)} 的故事${DOWN()}</a>`:`<p class="mt-6 text-[15px] leading-7 text-white/80">${esc(c.bio)}</p>`}
+    <div class="mt-6 hidden items-center gap-3 md:flex"><a class="${solidButton} !bg-[#d81b60] !text-white shadow-[0_8px_24px_rgba(216,27,96,.35)] hover:!bg-[#c2185b] inline-flex" href="#plays">用 ${esc(name)} 创作 ${ARROW}</a>${ADB('')}</div>${ADT}
+   </div>
+  </div>
+ </section>
+
+ ${p.story?`<section id="story" class="mt-24 scroll-mt-24 md:mt-32">
+  <p class="${eyebrow}">Story · 故事 ${AI}${ED('story')}</p>
+  <h2 class="${displayTitle} mt-4 text-3xl md:text-[2.4rem]">读 ${esc(name)} 的故事</h2>
+  <div class="mt-10 max-w-3xl">
+   ${p.hook?`<p class="border-l-2 border-[var(--accent)] pl-5 font-space text-xl leading-snug text-foreground md:text-2xl">${esc(p.hook)}</p>`:''}
+   <div class="mt-8 space-y-5 text-[17px] leading-8 text-foreground/75">${p.story.map(x=>`<p>${esc(x)}</p>`).join('')}</div>
+  </div>
+  ${(p.dossier||[]).length?`<dl class="mt-12 grid gap-px overflow-hidden rounded-xl border border-foreground/10 bg-foreground/10 sm:grid-cols-2 lg:grid-cols-4">${p.dossier.slice(0,4).map(d=>`<div class="bg-card p-5"><dt class="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.2em] text-foreground/45"><span class="size-1.5 rounded-full bg-[var(--accent)]"></span>${esc(d.label)}</dt><dd class="mt-2 text-[15px] leading-6 text-foreground/85">${esc(d.value)}</dd></div>`).join('')}</dl>`:''}
+ </section>`:''}
+
+ ${voice.length?`<section class="mt-24 rounded-2xl border border-foreground/10 p-6 md:mt-32 md:p-12" style="background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 14%,transparent),transparent 55%)">
+  <div class="min-w-0"><p class="font-mono text-[11px] uppercase tracking-[0.22em] text-foreground/45">Voice · 台词 ${AI}${ED('voice')}</p>
+   <div class="mt-6 grid">${voice.map((v,i)=>`<figure data-v="${i}" class="[grid-area:1/1] transition-all duration-700 ${i?'pointer-events-none translate-y-2 opacity-0':'translate-y-0 opacity-100'}"><figcaption class="flex items-center gap-3 text-sm text-[var(--accent)]"><span class="h-px w-6 bg-[var(--accent)]"></span>${esc(v.context)}</figcaption><blockquote class="mt-4 text-balance font-space text-[1.6rem] font-medium leading-snug text-foreground md:text-[2.4rem]">「${esc(v.line)}」</blockquote></figure>`).join('')}</div>
+   <div class="mt-10 flex flex-wrap gap-2">${voice.map((v,i)=>`<button data-vt="${i}" class="relative overflow-hidden rounded-full border px-4 py-2 text-xs transition-colors">${esc(v.context)}</button>`).join('')}</div></div>
+ </section>`:''}
+
+ ${(p.files||[]).length?`<section class="mt-24 grid gap-10 border-t border-foreground/10 pt-16 md:mt-32 lg:grid-cols-12 lg:gap-12">
+  <div class="lg:col-span-4"><div class="lg:sticky lg:top-24"><p class="${eyebrow}">Archive · 档案 ${AI}${ED('files')}</p><h2 class="${displayTitle} mt-4 text-balance text-3xl leading-[1.05] md:text-[2.4rem]">${esc(name)} 的档案</h2></div></div>
+  <div class="lg:col-span-7 lg:col-start-6">${p.files.map((f,i)=>`<details ${i?'':'open'} class="group border-t border-foreground/10 py-8 first:border-t-0 first:pt-0 last:border-b">
+   <summary class="flex cursor-pointer list-none items-start gap-5"><span class="mt-1.5 shrink-0 font-mono text-xs tabular-nums text-[var(--accent)]">FILE ${String(i+1).padStart(2,'0')}</span><span class="min-w-0 flex-1"><span class="block font-space text-xl font-medium text-foreground md:text-2xl">${esc(f.title)}</span><span class="mt-2 block truncate text-[15px] text-foreground/45 group-open:hidden">${esc(f.body)}</span></span><span class="mt-1.5 shrink-0 text-foreground/40 transition-transform group-open:rotate-180">${DOWN(18)}</span></summary>
+   <p class="mt-5 text-[17px] leading-8 text-foreground/75 md:pl-[4.25rem]">${esc(f.body)}</p></details>`).join('')}</div>
+ </section>`:''}
+
+ ${(p.signatures||[]).length?`<section class="mt-24 grid gap-10 border-t border-foreground/10 pt-16 md:mt-32 lg:grid-cols-12 lg:gap-12">
+  <div class="lg:col-span-5"><div class="relative aspect-[4/5] overflow-hidden rounded-2xl bg-gradient-to-b from-foreground/[0.08] to-foreground/[0.02]">${cut?`<img src="${cut.src}" class="absolute left-1/2 top-[5%] w-[125%] max-w-none -translate-x-1/2">`:`<img src="${hero}" class="absolute inset-0 h-full w-full bg-white object-contain p-6">`}</div></div>
+  <div class="lg:col-span-6 lg:col-start-7"><p class="${eyebrow}">Signatures · 辨识特征 ${AI}${ED('signatures')}</p><h2 class="${displayTitle} mt-4 text-balance text-3xl leading-[1.05] md:text-[2.4rem]">为什么一眼就能认出 ${esc(name)}</h2>
+   <ol class="mt-10 divide-y divide-foreground/10 border-y border-foreground/10">${p.signatures.map((s,i)=>`<li class="grid grid-cols-[2.5rem_1fr] gap-2 py-6"><span class="font-mono text-sm tabular-nums text-foreground/35">${String(i+1).padStart(2,'0')}</span><div><h3 class="font-space text-lg font-medium">${esc(s.title)}</h3><p class="mt-2 text-[15px] leading-7 text-foreground/55">${esc(s.body)}</p></div></li>`).join('')}</ol>
+   <a class="${solidButton} !bg-[#d81b60] !text-white shadow-[0_8px_24px_rgba(216,27,96,.35)] hover:!bg-[#c2185b] mt-8" href="#plays">用 ${esc(name)} 创作 ${ARROW}</a></div>
+ </section>`:''}
+
+
+
+ <section id="plays" class="pl-sec"></section>
+ <section id="adultWorks" class="mt-24 hidden"></section>
+
+ <p class="mt-16 rounded-lg bg-foreground/[0.04] p-3 text-xs leading-5 text-foreground/45">测试信息：外形描述 ${esc(c.desc)} · 创建于 ${esc(c.created)}${c.page_err?' · 文案生成失败：'+esc(c.page_err):''}${c.cutout_err?' · 抠图失败：'+esc(c.cutout_err):''}<br>和分支页面的差别：没有 PV / 待机动作 / 抽卡视频，也没有羁绊、FAQ、相关推荐；左侧「其他角色」是测试站里大家创建的角色（正式版应为这位作者的其他角色）。</p>
+</div>`;
+ // 立绘 / 海报切换（同 CharacterArtStage）
+ document.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{mode=b.dataset.m;document.getElementById('stage').innerHTML=stage();bindHero();['hb','pk'].forEach(k=>{const e=document.getElementById(k);if(e)e.style.display=mode==='art'?'':'none'});document.getElementById('wall').style.opacity=mode==='poster'?.22:.5;
+  document.querySelectorAll('[data-m]').forEach(x=>x.className='rounded-full px-3 py-1 text-xs transition '+(x===b?'bg-white text-black':'text-white/70 hover:text-white'))});
+ // 10-09 木木夕：复用唤醒页交互 —— 点立绘 Q 弹抖一下 + 气泡换一句台词（打字机）
+ const lines=voice.map(v=>v.line).filter(Boolean);let li=0,tok=0;
+ const say=s=>{const hb=document.getElementById('hb'),t=document.getElementById('hbt');if(!hb)return;const my=++tok;hb.classList.remove('pop','fin');void hb.offsetWidth;t.textContent='';
+  setTimeout(()=>{if(my!==tok)return;hb.classList.add('pop');let k=0;setTimeout(function tick(){if(my!==tok)return;t.textContent=s.slice(0,++k);if(k<s.length)setTimeout(tick,/[，。！？、—…]/.test(s[k-1])?220:65);else hb.classList.add('fin')},300)},80)};
+ const bindHero=()=>{const im=document.getElementById('hero');if(!im||!lines.length)return;im.onclick=()=>{const pk=document.getElementById('pk');if(pk)pk.classList.add('gone');im.classList.remove('jelly');void im.offsetWidth;im.classList.add('jelly');li=(li+1)%lines.length;say(lines[li])}};
+ if(lines.length&&cut){bindHero();setTimeout(()=>say(lines[0]),600)}
+ // 台词轮播（同 CharacterVoice，7 秒一句，可点）
+ if(voice.length){let act=0,t;const show=i=>{act=i;document.querySelectorAll('[data-v]').forEach(f=>f.className='[grid-area:1/1] transition-all duration-700 '+(+f.dataset.v===i?'translate-y-0 opacity-100':'pointer-events-none translate-y-2 opacity-0'));
+  document.querySelectorAll('[data-vt]').forEach(b=>b.className='relative overflow-hidden rounded-full border px-4 py-2 text-xs transition-colors '+(+b.dataset.vt===i?'border-[var(--accent)] text-foreground':'border-foreground/15 text-foreground/50 hover:border-foreground/40 hover:text-foreground'));
+  clearTimeout(t);t=setTimeout(()=>show((act+1)%voice.length),7000)};
+  document.querySelectorAll('[data-vt]').forEach(b=>b.onclick=()=>show(+b.dataset.vt));show(0)}
+ if(window.mountPlays)mountPlays(c)   // 10-10 延展玩法
+ mountAdult(c)
+}
+// 10-10 成人作品：只在成人模式（localStorage ol_adult=1）下显示，作品存在 adult/gen/works.jsonl（按 cid），不进 chars/ 和公开列表
+async function mountAdult(c){const box=document.getElementById('adultWorks');if(!box||localStorage.getItem('ol_adult')!=='1')return;
+ let w=[];try{w=(await fetch('../adult/gen/list?cid='+encodeURIComponent(c.id),{cache:'no-store'}).then(r=>r.json())).works||[]}catch(e){}
+ let vv=[];try{vv=(await fetch('../adult/vid/list?cid='+encodeURIComponent(c.id),{cache:'no-store'}).then(r=>r.json())).videos||[]}catch(e){}   // 10-11 做成视频
+ box.classList.remove('hidden');
+ box.innerHTML=`<p class="font-mono text-[11px] uppercase tracking-[0.22em] text-foreground/45">Adult · 成人作品</p><div class="mt-3 flex flex-wrap items-end justify-between gap-3"><h2 class="font-space text-3xl font-bold">${esc(c.name)} 的成人插画</h2>
+  <a href="../?adult_oc=${encodeURIComponent(c.id)}" class="text-sm text-[#d81b60] hover:underline">继续出图 ›</a></div><p class="mt-1 text-xs text-foreground/45">只在成人模式下显示 · ${w.length} 张${vv.length?` · ${vv.length} 段视频`:''} · 点开图片可以「做成视频」</p>
+  ${vv.length?`<div class="mt-6 grid grid-cols-2 gap-3 md:grid-cols-4">${vv.map(x=>`<figure><video src="../${esc(x.src)}" poster="../${esc(x.poster)}" controls playsinline preload="none" loop class="aspect-[3/4] w-full rounded-lg bg-black object-cover"></video><figcaption class="mt-1 truncate text-[11px] text-foreground/50">${esc(x.kind_name)} · ${x.sec}秒</figcaption></figure>`).join('')}</div>`:''}
+  ${w.length?`<div class="mt-6 grid grid-cols-3 gap-3 md:grid-cols-5">${w.map((x,i)=>`<figure data-aw="${i}" class="cursor-zoom-in"><img src="../${esc(x.thumb)}" class="aspect-[3/4] w-full rounded-lg object-cover object-top ring-1 ring-foreground/10"><figcaption class="mt-1 truncate text-[11px] text-foreground/50">${esc(x.label)}</figcaption></figure>`).join('')}</div>`
+   :`<p class="mt-6 text-sm text-foreground/50">还没有成人插画，点「继续出图」挑姿势和场景出第一张。</p>`}`;
+ box.querySelectorAll('[data-aw]').forEach(f=>f.onclick=()=>{const x=w[+f.dataset.aw],r=x.recipe||{};const o=document.createElement('div');o.className='awbox';
+  o.innerHTML=`<div class="awin"><img src="../${esc(x.src)}"><div class="awt"><b>${esc(x.label)}</b><small>${esc(r.model||'')} · ${esc(r.style_name||'')} · ${esc(x.created||'')}</small><details><summary>提示词</summary><pre>${esc(r.prompt||'')}</pre></details><button>复制完整配方</button><a class="awv" href="../?adult_oc=${encodeURIComponent(c.id)}&vid=${encodeURIComponent(x.id)}">▶ 做成视频</a></div></div>`;
+  document.body.appendChild(o);o.onclick=e=>{if(e.target===o)o.remove()};o.querySelector('button').onclick=e=>{navigator.clipboard.writeText(JSON.stringify(Object.assign({label:x.label,src:x.src},r),null,1));e.target.textContent='已复制 ✓'}})}
+let C=null,ALL=[];
+Promise.all([fetch('../api/char/'+id).then(r=>r.json()),fetch('../api/chars').then(r=>r.json()).catch(()=>[])]).then(([c,all])=>{C=c;ALL=all;render(c,all);mountEditor()}).catch(e=>document.getElementById('root').innerHTML='<p class="py-24 text-center text-red-600">读取失败：'+esc(e)+'</p>');
+
+/* 10-09 木木夕：作者可编辑主页内容（测试站人人可改；正式版只给创建者看到「编辑」） */
+const SECS=[['base','基本信息'],['story','故事'],['voice','台词'],['files','档案'],['signatures','辨识特征']];
+let D=null,cur='base';
+const deep=o=>JSON.parse(JSON.stringify(o||{}));
+function mountEditor(){
+ if(!document.getElementById('ed')){const e=document.createElement('div');e.id='ed';e.innerHTML='<div class="mask"></div><div class="pan"><div class="hd"><b>编辑角色主页</b><button class="x" aria-label="关闭">✕</button></div><div class="tabs"></div><div class="bd"></div><div class="ft"><button class="c">取消</button><button class="s">保存</button></div></div>';document.body.appendChild(e);
+  e.querySelector('.mask').onclick=e.querySelector('.x').onclick=e.querySelector('.c').onclick=closeEd;e.querySelector('.s').onclick=saveEd}
+ document.querySelectorAll('[data-ed]').forEach(b=>b.onclick=()=>openEd(b.dataset.ed));
+ const t=document.getElementById('edTop');if(t)t.onclick=()=>openEd('base')}
+function openEd(sec){D={name:C.name,bio:C.bio||'',img:C.img,profile:deep(C.profile)};cur=sec;drawEd();document.getElementById('ed').classList.add('on');document.body.style.overflow='hidden'}
+function closeEd(){document.getElementById('ed').classList.remove('on');document.body.style.overflow=''}
+const fld=(lab,path,ta,rows)=>`<label>${lab}</label>${ta?`<textarea data-p="${path}" rows="${rows||3}">${esc(get(path)||'')}</textarea>`:`<input data-p="${path}" value="${esc(get(path)||'')}">`}`;
+function get(path){return path.split('.').reduce((o,k)=>o==null?o:o[k],D)}
+function set(path,v){const ks=path.split('.');let o=D;ks.slice(0,-1).forEach((k,i)=>{if(o[k]==null)o[k]=/^\d+$/.test(ks[i+1])?[]:{};o=o[k]});o[ks[ks.length-1]]=v}
+const mari=sec=>`<div class="mari"><input id="mh" placeholder="想怎么改？比如：更搞笑一点（可不填）"><button id="mr" data-s="${sec}">✦ Mari 重写</button></div>`;
+const pairs=(key,a,b,la,lb,taB)=>(get('profile.'+key)||[]).map((x,i)=>`<div class="row ${taB?'stack':''}"><input data-p="profile.${key}.${i}.${a}" value="${esc(x[a]||'')}" placeholder="${la}">${taB?`<textarea data-p="profile.${key}.${i}.${b}" rows="3" placeholder="${lb}">${esc(x[b]||'')}</textarea>`:`<input data-p="profile.${key}.${i}.${b}" value="${esc(x[b]||'')}" placeholder="${lb}">`}</div>`).join('');
+function drawEd(){
+ const e=document.getElementById('ed');
+ e.querySelector('.tabs').innerHTML=SECS.map(([k,l])=>`<button data-t="${k}" class="${k===cur?'on':''}">${l}</button>`).join('');
+ e.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{collect();cur=b.dataset.t;drawEd()});
+ let h='';
+ if(cur==='base') h=mari('summary')+`<p class="tip" style="margin:-2px 0 6px">Mari 重写称号、档案简介和属性，名字和立绘不动</p>`+fld('名字','name')+`<label>主立绘（换了会重新抠图）</label><div class="imgs">${(C.images||[]).map(u=>`<img src="${fix(u)}" data-img="${esc(u)}" class="${u===D.img?'on':''}">`).join('')}</div>`
+   +fld('称号','profile.epithet')+fld('一句话介绍','bio')+fld('档案简介','profile.summary',1,4)+`<label>属性</label>`+pairs('attributes','label','value','项目','内容');
+ if(cur==='story') h=mari('story')+fld('开头一句（悬念）','profile.hook',1,2)+(get('profile.story')||[]).map((x,i)=>fld('第 '+(i+1)+' 段','profile.story.'+i,1,6)).join('')+`<label>小档案</label>`+pairs('dossier','label','value','项目','内容');
+ if(cur==='voice') h=mari('voice')+pairs('voice','context','line','场景','台词',1)+`<p class="tip">第一句「初次见面」也是唤醒页对话框里的开场白</p>`;
+ if(cur==='files') h=mari('files')+pairs('files','title','body','标题','内容',1);
+ if(cur==='signatures') h=mari('signatures')+pairs('signatures','title','body','特征名','描述',1)+`<p class="tip">只写立绘里看得见的外形</p>`;
+ const bd=e.querySelector('.bd');bd.innerHTML=h;bd.scrollTop=0;
+ bd.querySelectorAll('[data-img]').forEach(im=>im.onclick=()=>{D.img=im.dataset.img;bd.querySelectorAll('[data-img]').forEach(x=>x.classList.toggle('on',x===im))});
+ const mr=bd.querySelector('#mr');if(mr)mr.onclick=async()=>{collect();mr.disabled=true;const o=mr.textContent;mr.textContent='Mari 写着呢…';
+  try{const r=await fetch('../api/char/'+id+'/rewrite',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({section:mr.dataset.s,name:D.name,profile:D.profile,hint:bd.querySelector('#mh').value})}).then(r=>r.json());
+   if(r.error)throw new Error(r.error);Object.assign(D.profile,r);drawEd();toast('Mari 重写好了，满意再点保存')}catch(err){alert('重写失败：'+err.message);mr.disabled=false;mr.textContent=o}}}
+function collect(){document.querySelectorAll('#ed [data-p]').forEach(i=>set(i.dataset.p,i.value))}
+async function saveEd(){collect();const b=document.querySelector('#ed .s');b.disabled=true;b.textContent=D.img!==C.img?'保存中（重新抠图）…':'保存中…';
+ try{const r=await fetch('../api/char/'+id,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(D)}).then(r=>r.json());if(r.error)throw new Error(r.error);
+  C=r;ALL=ALL.map(x=>x.id===C.id?{...x,name:C.name,img:C.img}:x);closeEd();render(C,ALL);mountEditor();toast('已保存')}
+ catch(err){alert('保存失败：'+err.message)}finally{b.disabled=false;b.textContent='保存'}}
+function toast(t){const d=document.createElement('div');d.className='edtoast';d.textContent=t;document.body.appendChild(d);setTimeout(()=>d.remove(),1800)}
+</script></body></html>

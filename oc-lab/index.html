@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="only light">
+<title>KusArt · 创建角色 测试站</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@chinese-fonts/xiaolai@3.0.0/dist/Xiaolai/result.css">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&family=Shantell+Sans:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="base.css?v=1010z">
+<link rel="stylesheet" href="plays.css?v=1010y"><link rel="stylesheet" href="adult.css?v=1011m"><meta name="theme-color" content="#F8F7F7">
+</head><body>
+<div class="top"><img class="logo" src="a/logo.png" alt="KusArt"><span class="tag">真实测试 v0.6</span><span class="sp"></span><span class="cr" id="spent">✦ 本次已用 0</span>
+<label title="测试站用：切换会员 / 非会员两种状态" style="display:none"><input type="checkbox" id="vipT"> 模拟会员</label><label class="adsw" title="成人向虚构内容，需年满 18 岁"><input type="checkbox" id="adT"><i></i>成人模式</label><label><input type="checkbox" id="nt"> 设计说明</label><button onclick="reset()">重来</button></div>
+<div class="stage" id="st"></div>
+<input type="file" id="file" accept="image/*" hidden>
+<script src="adult.js?v=1011l"></script>
+<script>
+/* 和原型 v0.6 同一套界面；区别：描述 / 设定 / 主页文案由 Kimi K2.6 现写，候选图由 prod Kusa-Anima 真出（加速 + 画风增强，一次 4 张 = 60 积分） */
+let S;function fresh(){S={type:null,style:null,desc:'',upload:null,keep:false,images:[],lines:[],pick:0,name:'',names:[],age:null,role:null,roles:[],traits:[],bio:'',prof:null,dbg:''}}fresh();
+let spent=0;const addSpent=n=>{spent+=n;document.getElementById('spent').textContent='✦ 本次已用 '+spent};
+const TN=t=>t==='熟男'?'大叔':t;   // 10-09 木木夕：「熟男」显示改叫「大叔」，内部键不变（例图/画风/tag 都按熟男存）
+const STEPS=['类型','画风','描述','挑选','设定','唤醒'];
+const st=document.getElementById('st');
+document.getElementById('nt').onchange=e=>document.body.classList.toggle('notes',e.target.checked);
+const api=async(p,b)=>{const r=await fetch('api/'+p,b===undefined?{}:{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)});if(r.status===401){location.href='login';throw new Error('登录过期')}const j=await r.json();if(j.error)throw new Error(j.error);return j};
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let cur=0;
+function head(i){return `<div class="steplbl">${i>0&&i<5?`<button class="back" onclick="go(${i===4&&S.keep?0:i===4&&S.images.length===1?1:i===3?(S.rollMeta&&S.images[0]===S.rollMeta[0].img?0:1):i===0.5?0:i===2?(S.cusPick?0.5:0):i===1?(S.upload?0:2):i-1})">‹ 上一步</button>`:'<span></span>'}${i<5?mini(i):''}</div>`}   // 10-09 木木夕：去掉 01~06 步骤条（冗余），只留「上一步」
+const DROP=`<svg class="drop" viewBox="0 0 40 40" fill="currentColor"><path d="M14 6C21 6 27 12 27 20 27 29 21 34 14 34 7 34 2 29 2 21 2 12 7 6 14 6Z"/><circle cx="33" cy="12" r="2.6"/><circle cx="36.5" cy="22" r="1.5"/><circle cx="30" cy="31" r="1.9"/></svg>`;
+const H=(a,k,b)=>`<h1>${a}<span class="hand">${k}</span>${b}${DROP}</h1>`;
+const FRAME=`<svg class="frame" preserveAspectRatio="none" viewBox="0 0 400 60"><path d="M6 5 C120 2 260 7 394 4 M396 3 C398 22 395 40 397 56 M397 55 C260 58 140 54 5 57 M4 58 C2 40 6 22 3 6" fill="none" stroke="#79849A" stroke-width="1.4" stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg>`;
+const note=t=>`<div class="note">${t}</div>`;
+function go(i){if(i===0&&window.AD&&AD.on)return AD.home();cur=i;st.dataset.step=Math.floor(i);st.innerHTML='';const d=document.createElement('div');d.className='fade';d.style.cssText='display:flex;flex-direction:column;flex:1';d.innerHTML=R[i]();st.appendChild(d);(B[i]||(()=>{}))();st.classList.toggle('hascta',!!st.querySelector('.cta'));window.scrollTo(0,0)}
+function reset(){fresh();go(0)}
+const $=s=>st.querySelector(s),$$=s=>st.querySelectorAll(s);
+const R=[],B=[];
+function pickFile(){return new Promise(res=>{const f=document.getElementById('file');f.value='';f.onchange=()=>res(f.files[0]);f.click()})}
+async function upload(file,read=true){const fd=new FormData();fd.append('f',file);fd.append('read',read?'1':'0');const r=await fetch('api/upload',{method:'POST',body:fd});const j=await r.json();if(j.error)throw new Error(j.error);return j}
+function busy(cap,sub){st.innerHTML=`<div class="loading fade"><img src="a/RING.svg" alt=""><div class="cap">${esc(cap)}</div><div class="rot" id="rot">${esc(sub||'')}</div><div class="sec" id="sec"></div></div>`}
+function fail(e,back){st.innerHTML=`<div class="fade" style="flex:1;display:flex;flex-direction:column;justify-content:center"><div class="err">出错了：${esc(e.message||e)}</div><button class="btn2" onclick="go(${back})">返回上一步</button></div>`}
+
+/* 1 类型 */
+R[0]=()=>head(0)+`${H("你想创建一个","什么样","的角色")}<div class="sub">先选一个大方向，后面都能改</div>
+<div class="tsel">${[['少女','',1],['御姐','',2],['假小子','',8],['少年','',4],['熟男','',5],['男娘','',9],['Furry','',6]].map(o=>`<div class="tp" data-v="${o[0]}"><div class="tpanel"><img class="bust bsh" src="a/v8bust_${o[2]}.webp?v=p3" alt=""><img class="full fsh" src="a/v8cut_${o[2]}.webp?v=p3" alt=""><img class="bust" src="a/v8bust_${o[2]}.webp?v=p3" alt=""><img class="full" style="${o[3]||''}" src="a/v8cut_${o[2]}.webp?v=p3" alt="${TN(o[0])}"></div><div class="tlab"><i></i><b>${TN(o[0])}</b>${o[1]?`<small>${o[1]}</small>`:""}</div></div>`).join('')+`<div class="tp tpc" id="cus"><div class="tpanel"><div class="tpplus">＋</div></div><div class="tlab"><i></i><b>自定义</b><small>选性别 / 年龄 / 物种</small></div></div>`}</div>
+<div class="cta ctaalt"><div class="alt"><div class="ghost" id="up">上传已有角色图<small>已有角色立绘 · 免费</small></div><div class="ghost" id="rnd">随便来一个<small>从角色库挑 4 个 · 免费</small></div></div></div>
+<div id="mineBox"></div>`+note('真实测试版：描述、设定、主页文案由 Kimi K2.6 现写；候选图由 prod Kusa-Anima 真出（生图加速 + 画风增强，一次 4 张）。10-08 实测询价：开加速 15 积分/张，不开 40；画风增强不加价 → 4 张 = 60。出图走木木夕的 prod 账号。<br>上传图：用 Gemini 2.5 Flash 读出外形和类型，然后跳过「描述」。随便来一个：AI 随机写描述，默认 Q 萌画风，直接出 4 张。');
+B[0]=()=>{$$('.tp[data-v]').forEach(b=>b.onclick=()=>{S.type=b.dataset.v;S.custom=null;S.cusPick=null;S.cusHint='';if(S.customExtra){S.extra='';S.customExtra=false}S.upload=null;$('.tsel').classList.add('picked');b.classList.add('sel');setTimeout(()=>go(2),320)});
+ $('#up').onclick=async()=>{const f=await pickFile();if(!f)return;busy('正在读你的角色','看发色、服装和特征…');
+   try{const j=await upload(f);S.upload=j.url;S.desc=j.desc;S.type=j.type||'少女';   // 10-09 木木夕：上传已有角色图 → 直接进补充设定（不再选画风/出图）
+   Object.assign(S,{cusPick:null,cusHint:'',style:null,keep:true,images:[j.url],lines:[''],pick:0,prof:null,cut:null,subject:j.desc});profile()}catch(e){fail(e,0)}};
+ $('#rnd').onclick=()=>magicRoll();
+ // 10-09 木木夕：自定义改成底部弹层（不再在卡片下面展开输入框），会员功能
+ // 10-10 木木夕：自定义不用弹层了 → 进一个页面依次选 性别 → 年龄段 → 物种，再进 tag 页（补充描述 / 参考图在 tag 页的「想再补充点什么」里）
+ $('#cus').onclick=()=>vipGate('自定义角色',()=>{$('.tsel').classList.add('picked');$('#cus').classList.add('sel');setTimeout(()=>go(0.5),250)});
+ api('chars').then(cs=>{if(!cs.length)return;$('#mineBox').innerHTML=`<div class="lbl" style="margin-top:22px">大家已经创建的角色（${cs.length}）</div><div class="mine">${cs.map(c=>`<a href="c/${c.id}" target="_blank"><img src="${esc(c.img)}"><span>${esc(c.name)}</span></a>`).join('')}</div>`}).catch(()=>{})};
+
+/* 2 画风 */
+const STYC={};let STY=null;
+const scard=(s,cls='')=>`<div class="pick sc ${cls} ${S.style===s.code?'sel':''}" data-k="${s.code}"><img src="${s.img}" loading="lazy" style="border-radius:15px"><div class="stl">${esc(s.name)} · ${esc(s.code)}<small>${esc((s.sub||'').split('（')[0])}</small></div></div>`;   // 10-08 木木夕：只放图，名字只在「设计说明」里给内部看
+R[1]=()=>head(1)+`${H("选一个","画风","")}<div class="sub">${S.upload?'你上传了图：可以保持原图画风，也可以换一种':'同一个角色，用不同画风画出来的样子，选一个最喜欢的'}</div>
+${S.upload?`<div class="ghost" id="keep" style="margin-bottom:14px;display:flex;align-items:center;gap:12px;text-align:left"><img src="${S.upload}" style="width:54px;height:72px;object-fit:contain;border-radius:8px;background:#fff">保持原图画风<small style="margin-left:auto">免费 · 推荐</small></div>`:''}
+<div class="wrapz styles" id="sty"></div>
+<!-- 10-09 木木夕：「换一批风格」去掉 -->
+<div class="dbg" id="src"></div>${S.upload?`<div class="dbg">从图里读出：${esc(TN(S.type))} · ${esc(S.desc)}</div>`:''}`+note('画风按角色类型推荐（10-08 木木夕）：复用风格 Jev（style-lab 同一份 router_v8 + 精选池 tblDUKN4）。用类型问 Jev 判角色类别（萝莉 / 美少女 / 御姐 / 正太 / 美少年 / 成熟男性 / 非人），男性类型会过滤掉「画不出男性 / 大叔会丑化」的风格；每种类型有自己的画风大类顺序，前 4 类各取池里排第一的 Anima 风格做主推，「换一批风格」从其余推荐里随机换 4 个。只取 Anima，去掉 10-07 扫出身材倾向明显的风格。例图：正太和少年用美少年例图、熟男用大叔例图，其余用同一句女生提示词的统一例图。上传图后选新画风会直接出图（跳过描述）。');
+B[1]=async()=>{const ty=S.type||'少女';$('#sty').innerHTML='<div class="sub" style="grid-column:1/-1">按「'+esc(TN(ty))+'」挑画风中…</div>';
+ try{STY=await api('styles?type='+encodeURIComponent(ty))}catch(e){$('#sty').innerHTML='<div class="err" style="grid-column:1/-1">'+esc(e.message)+'</div>';return}
+ $('#src').textContent=`风格 Jev：${STY.src} · 判成 ${STY.char} · ${STY.sec}s`;$('#sty').innerHTML=STY.main.map(s=>scard(s,(!S.upload&&S.desc&&!PREV[S.desc+'|'+s.code])?'pvload':'')).join('');   // 10-09 木木夕：生成中不露画风例图（用户会以为出错了），一开始就是加载态
+ if(!S.upload&&S.desc)preview(STY.main);   // 10-09 木木夕：画风放到最后一步，主推 4 个画风直接用用户设定各出 1 张预览
+ const bind=()=>$$('.sc').forEach(c=>c.onclick=()=>{S.style=c.dataset.k;{const s=[...STY.main,...STY.more].find(x=>x.code===c.dataset.k);S.styleName=s?(s.sub||s.name):''}S.keep=false;c.classList.add('sel');setTimeout(()=>{const pj=PREVJ[S.desc+'|'+S.style];   // 10-09 木木夕：预览已出的画风直接用这张进设定，不再另出 4 张
+   if(pj){Object.assign(S,{images:[pj.images[0]],lines:(pj.lines||[]).slice(0,1),subject:pj.subject,pick:0,prof:null,cut:null});profile()}else gen()},220)});bind();
+ // 10-08 木木夕：「查看更多」改成「换一批风格」，每次从其余推荐里随机换 4 个新的（不和当前这批重复，轮完一圈再从头）
+ let shown=STY.main.map(s=>s.k||s.code),seen=new Set(shown);
+ if($('#more'))$('#more').onclick=()=>{const all=[...STY.main,...STY.more],key=s=>s.k||s.code;let pool=all.filter(s=>!seen.has(key(s)));
+  if(pool.length<4){seen=new Set(shown);pool=all.filter(s=>!shown.includes(key(s)))}
+  const pick=pool.sort(()=>Math.random()-.5).slice(0,4);shown=pick.map(key);shown.forEach(k=>seen.add(k));
+  $('#sty').innerHTML=pick.map(s=>scard(s)).join('');bind()};
+ const k=$('#keep');if(k)k.onclick=()=>{S.style=null;S.keep=true;S.images=[S.upload];S.lines=['你好，又见面啦！'];S.pick=0;S.prof=null;go(3)}};
+
+// 10-09 木木夕：自定义都是会员功能（预设免费）。测试站右上角「模拟会员」切换两种状态
+let VIP=localStorage.getItem('ol_vip')==='1';
+function sheetClose(){const o=document.querySelector('.shov');if(!o)return;o.classList.remove('on');setTimeout(()=>o.remove(),220)}
+function sheetOpen(html){sheetClose();const o=document.createElement('div');o.className='shov';o.innerHTML=`<div class="shbox">${html}</div>`;document.body.appendChild(o);o.onclick=e=>{if(e.target===o)sheetClose()};requestAnimationFrame(()=>o.classList.add('on'));return o}
+const VIP_ON=false;   // 10-10 木木夕：自定义先去掉会员门槛（想恢复改成 true）
+function vipGate(what,cb){if(VIP||!VIP_ON)return cb();const o=sheetOpen(`<div class="shgrab"></div><div class="vipico">👑</div><h3>${esc(what)}是会员功能</h3><p class="shsub">预设的选项都免费；想按自己的想法写，开通会员后 Mari 会现画给你</p><div class="shbtns"><button class="btn2" data-x>先用预设</button><button class="btn" data-v>开通会员</button></div>`);
+ o.querySelector('[data-x]').onclick=sheetClose;o.querySelector('[data-v]').onclick=()=>{VIP=true;localStorage.setItem('ol_vip','1');const t=$('#vipT');if(t)t.checked=true;sheetClose();toastMsg('测试站：已模拟开通会员');setTimeout(cb,260)}}
+setTimeout(()=>{const vt=document.getElementById('vipT');if(vt){vt.checked=VIP;vt.onchange=()=>{VIP=vt.checked;localStorage.setItem('ol_vip',VIP?'1':'0')}}},0);
+function toastMsg(t){const d=document.createElement('div');d.className='shtoast';d.textContent=t;document.body.appendChild(d);setTimeout(()=>d.classList.add('on'),10);setTimeout(()=>{d.classList.remove('on');setTimeout(()=>d.remove(),300)},1800)}
+function sheet(o){const h=sheetOpen(`<div class="shgrab"></div><h3>${esc(o.title)}</h3>${o.sub?`<p class="shsub">${esc(o.sub)}</p>`:''}
+ <textarea class="shin" maxlength="${o.ref?200:60}" placeholder="${esc(o.ph||'')}">${esc(o.value||'')}</textarea>
+ ${o.ref?`<div class="shref"><button class="shrefb" data-r><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="1.8"/><path d="M21 16l-5-5-9 9"/></svg><span>没想好？上传参考图，Mari 帮你写</span></button><small class="shrefn"></small></div>`:''}
+ ${o.gender?`<div class="shrow"><span>性别</span>${['女','男','不限'].map(g=>`<b class="pill ${(S.cusGender||'不限')===g?'sel':''}" data-sg="${g}">${g}</b>`).join('')}</div>`:''}
+ ${o.ex?`<div class="shex">${o.ex.map(x=>`<b data-ex="${esc(x)}">${esc(x)}</b>`).join('')}</div>`:''}
+ <div class="shbtns">${o.del?'<button class="btn2" data-d>删掉自定义</button>':'<button class="btn2" data-x>取消</button>'}<button class="btn" data-o>${esc(o.ok||'好了')}</button></div>`);
+ const ta=h.querySelector('.shin');let g=S.cusGender||'不限';setTimeout(()=>ta.focus(),250);
+ h.querySelectorAll('[data-ex]').forEach(b=>b.onclick=()=>{ta.value=b.dataset.ex;ta.focus()});
+ // 10-09 木木夕：自定义也能传参考图，Mari 读图反推外形写进输入框（用户还能改），性别按读出的类型自动选
+ const rb=h.querySelector('[data-r]');if(rb)rb.onclick=async()=>{const f=await pickFile();if(!f)return;const n=h.querySelector('.shrefn');rb.disabled=true;rb.classList.add('busy');rb.querySelector('span').textContent='Mari 正在读参考图…';
+  try{const j=await upload(f);ta.value=j.desc;o.refRead={desc:j.desc,type:j.type,url:j.url};rb.innerHTML=`<img src="${j.url}"><span>已读取 · 换一张</span>`;n.textContent='外形已经写进上面了，可以再改改';
+   const tg=TYPE_G[j.type];if(tg){g=tg;h.querySelectorAll('[data-sg]').forEach(x=>x.classList.toggle('sel',x.dataset.sg===tg))}}
+  catch(e){rb.querySelector('span').textContent='没想好？上传参考图，Mari 帮你写';n.textContent='读图失败：'+e.message}finally{rb.disabled=false;rb.classList.remove('busy')}};
+ h.querySelectorAll('[data-sg]').forEach(b=>b.onclick=()=>{g=b.dataset.sg;h.querySelectorAll('[data-sg]').forEach(x=>x.classList.toggle('sel',x===b))});
+ const x=h.querySelector('[data-x]');if(x)x.onclick=sheetClose;const d=h.querySelector('[data-d]');if(d)d.onclick=()=>{sheetClose();o.onDel&&o.onDel()};
+ const ok=h.querySelector('[data-o]');ok.onclick=async()=>{const t=ta.value.trim();if(!t){ta.focus();return}if(o.busy){ok.disabled=true;ok.textContent=o.busy}
+  try{await o.onOk.call(o,t,g);sheetClose()}catch(e){ok.disabled=false;ok.textContent=o.ok||'好了';alert(e.message)}}}
+// 10-09 木木夕：年龄和性别拆开。旧的「少女/少年/成年」混了性别；性别多数类型第一步就定了，只有 Furry / 自定义 / 上传图要单独选
+const AGES=['青春','成熟','年长','不详'],GENDERS=['女','男','不详'];
+const TYPE_G={'少女':'女','御姐':'女','假小子':'女','男娘':'男','少年':'男','熟男':'男'},TYPE_A={'少女':'青春','少年':'青春','假小子':'青春','男娘':'青春','御姐':'成熟','熟男':'成熟'};
+const needG=()=>!S.cusPick&&!!(S.custom||S.keep||S.upload||!TYPE_G[S.type]);
+function ageFrom(a,sub){const g=a==='少女'?'女':a==='少年'?'男':/girl|woman/.test(sub||'')?'女':/boy|man/.test(sub||'')?'男':'不详';
+ const ag=a==='少女'||a==='少年'?'青春':a==='成年'?'成熟':AGES.includes(a)?a:'不详';
+ if(S.cusPick)return {age:S.cusPick.a,gender:S.cusPick.g};
+ return {age:(!needG()&&TYPE_A[S.type])||ag,gender:(!needG()&&TYPE_G[S.type])||g}}
+const PREV={},PREVJ={};   // key = 设定|画风 → 预览图
+async function preview(list){const ty=S.type||'少女';
+ list.forEach(async st=>{const k=S.desc+'|'+st.code;const card=()=>document.querySelector(`.sc[data-k="${st.code}"]`);
+  const put=u=>{const pre=new Image();const done=()=>{const c=card();if(!c)return;c.querySelector('img').src=u;c.classList.add('prev');c.classList.remove('pvload');c.querySelector('.pvtip')?.remove();if(!c.querySelector('.pvbadge'))c.insertAdjacentHTML('beforeend','<i class="pvbadge">你的角色</i>')};
+   pre.onload=done;pre.onerror=done;pre.src=u};   // 10-09 木木夕：先把新图加载完再换，避免一瞬间露出画风例图
+  if(PREV[k])return put(PREV[k]);
+  {const c=card();if(c){c.classList.add('pvload');if(!c.querySelector('.pvtip'))c.insertAdjacentHTML('beforeend','<div class="pvtip"><img src="a/RING.svg" alt=""><span>Mari 正在画…</span></div>')}}
+  try{const {job}=await api('gen',{type:ty,style:st.code,desc:S.desc,n:1});
+   while(true){await new Promise(r=>setTimeout(r,1500));const j=await api('job/'+job);
+    if(j.status==='done'){PREV[k]=j.images[0];PREVJ[k]=j;addSpent(/^S\d+$/.test(st.code)?10:15);put(PREV[k]);return}
+    if(j.status==='error'){const c=card();if(c){c.classList.remove('pvload');c.querySelector('.pvtip')?.remove()}return}}}catch(e){const c=card();if(c){c.classList.remove('pvload');c.querySelector('.pvtip')?.remove()}}})}
+
+/* 3 描述 */
+const TAGC={};
+/* 0.5 自定义：性别 → 年龄段 → 物种（依次出现），映射到对应那套 tag */
+const CUSQ=[['g','性别',[['女','女生'],['男','男生'],['非二元','非二元','中性 · 不分男女']]],['a','年龄段',[['青春','青春','学生感 · 十几岁'],['成熟','成熟','二三十岁'],['年长','年长','四十岁以上']]],['sp','物种',[['人类','人类'],['Furry','人外','兽人 · 毛茸茸']]]];
+const cusType=c=>c.sp==='Furry'?'Furry':c.g==='非二元'?'假小子':c.g==='女'?(c.a==='青春'?'少女':'御姐'):(c.a==='青春'?'少年':'熟男');
+R[0.5]=()=>{const c=S.cusPick||{};const n=c.g?(c.a?3:2):1;return head(0.5)+`${H("先定几个","基础","设定")}<div class="sub">选完进入外形选择，后面都能改</div>
+<div class="cusq">${CUSQ.slice(0,n).map(([k,l,os])=>`<div class="cq"><div class="lbl">${l}</div><div class="cqos">${os.map(o=>`<button class="cqo ${c[k]===o[0]?'sel':''}" data-k="${k}" data-o="${o[0]}"><b>${o[1]}</b>${o[2]?`<small>${o[2]}</small>`:''}</button>`).join('')}</div></div>`).join('')}</div>
+<div class="cta"><button class="btn" id="cqok" ${c.g&&c.a&&c.sp?'':'disabled'}>下一步 · 选外形</button></div>`};
+B[0.5]=()=>{$$('.cqo').forEach(b=>b.onclick=()=>{const c=S.cusPick=Object.assign({},S.cusPick||{});c[b.dataset.k]=b.dataset.o;const y=scrollY;go(0.5);scrollTo(0,y);const last=st.querySelector('.cq:last-child');if(last&&b.dataset.k!=='sp')last.scrollIntoView({behavior:'smooth',block:'center'})});
+ $('#cqok').onclick=()=>{const c=S.cusPick;if(!(c&&c.g&&c.a&&c.sp))return;const ty=cusType(c);
+  const hint=[c.g==='非二元'?'中性外表，性别模糊':c.sp==='Furry'?(c.g==='女'?'女性':'男性'):'',c.g==='非二元'&&c.a!=='青春'?'成年':'',c.a==='年长'?'中年':'',c.sp==='Furry'&&c.a==='青春'?'年轻':''].filter(Boolean).join('，');
+  Object.assign(S,{type:ty,custom:null,customExtra:false,upload:null,keep:false,cusRef:false,gender:c.g,age:c.a,cusHint:hint});go(2)}};
+R[2]=()=>head(2)+`${H("选出角色的","样子","")}<div class="sub">${S.custom&&S.cusRef?"外形已经按你的参考图写好了，想改哪里再点":"每组点一个就行，已经帮你选好了默认值"}</div>
+<div class="dk2v"><div id="tagBox"><div class="hint">按「${esc(TN(S.type||'少女'))}」加载…</div></div>
+<details class="more2" ${S.extra?'open':''}><summary>✎ 想再补充点什么？<small>可选 · 写一句或传参考图</small></summary>
+<div class="txwrap"><textarea id="tx" placeholder="比如：总是抱着一本旧书，左眼下有颗泪痣">${esc(S.extra||'')}</textarea><button class="tximg" id="rf" title="添加参考图（可选）"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="1.8"/><path d="M21 16l-5-5-9 9"/></svg><span>参考图</span></button></div><div class="refnote" id="rfn"></div>
+<div class="agentbar"><button class="chipbtn" id="aw">✦ Mari 帮我写</button><button class="chipbtn" id="ap">✦ Mari 帮我润色</button></div></details>
+<div class="lbx" id="tlb"><div class="lbin"><img id="tlbi"><div class="pline" id="tlbl"></div><div class="lbbtn"><button class="btn2" id="tlbc">关闭</button><button class="btn" id="tlbo">选这个</button></div></div></div>
+<div class="cta"><div class="selsum" id="selsum"></div><button class="btn" id="gen"><span>下一步 · 选画风</span><small>· 看看你的角色在不同画风里的样子</small></button></div></div>`+
+note('「AI 帮我写」= Kimi 按类型 + 画风写一段 40~80 字外形描述；「润色」= 保留用户写的点，只补缺的。参考图：Kusa-Anima 是纯文生图，没有参考图输入，所以测试版先用 Gemini 把参考图读成文字追加进描述（会写在输入框里，看得见）。灵感词按第 1 步的类型给（10-08 木木夕）：每种类型 4 组 × 6 个；10-08 扩成 8 类：正太 / 少年 / 熟男是男性发型穿着，Furry 换成「物种」「毛色」，异种多一组「种族」。例图用 Anima（A-4，GinkgoWM 当天在挂）按「类型基础人设 + 只换这一个属性」现跑；兽耳的发色直接复用 OC generator 例图。');
+// 10-09 木木夕：每组 tag 末尾加「自定义」（会员）：写一句自己的，选中后和预设一样进描述
+const CUSPH={'发色':['渐变的蓝紫色','奶茶色挑染粉色','雾霾蓝'],'瞳色':['琥珀色','冰蓝色带金边','像星空一样的紫色'],'发型':['一侧剃短的长卷发','高马尾加长刘海','齐肩狼尾'],
+ '穿着':['复古飞行员夹克','白色修女服','oversize 机能风外套'],'特征':['脸颊上的星星贴纸','左手缠着绷带','头上的小恶魔角'],'物种':['小熊猫','雪豹','狮子'],'毛色':['奶茶色带白斑','黑白相间','渐变的粉橘色']};
+function cusChip(g){const v=(S.cus||{})[g],on=v&&S.sel[g].includes(v);
+ return `<div class="pick ic cusc ${on?'sel':''}" data-cg="${esc(g)}">${v?`<div class="icim cusim has"><span>${esc(v)}</span></div><span>自定义</span><i class="ck">✓</i>`:`<div class="icim cusim"><b>＋</b></div><span>自定义</span>`}</div>`}
+B[2]=async()=>{const tx=$('#tx');const ty=S.custom?(S.cusGender==='男'?'少年':'少女'):(S.type||'少女');   /* 自定义：弹层里选了男就用男性那套 */   // 10-09 木木夕：自定义卡的 tag 先默认用女性那套（少女），以后单独设计
+   // 10-09 木木夕参考 candy.ai：看图点选为主，每组默认选好、单选（特征可多选 2 个），描述框收成「补充」
+ const CROP={'发色':'head','瞳色':'eye','发型':'face','毛色':'head','物种':'head','种族':'half','耳朵尾巴':'half','穿着':'full','特征':'face','非人部件':'face','机械部位':'half'};
+ const MULTI={'非人部件':2};   // 10-09 木木夕：特征也改单选（每组都只选 1 个，预设库组合数才收得住）
+ try{const T=TAGC[ty]||(TAGC[ty]=await api('tags?type='+encodeURIComponent(ty)));
+  if(!S.sel||S.selType!==ty){S.sel={};S.cus={};S.selType=ty;T.groups.forEach(g=>{S.sel[g.group]=(MULTI[g.group]||(S.custom&&S.cusRef))?[]:[g.items[0].label]})}
+  $('#tagBox').innerHTML=T.groups.map(g=>`<div class="grp"><div class="lbl">${esc(g.group)}${MULTI[g.group]?'<small> · 可多选</small>':''}</div><div class="wrapz ichips">${g.items.map(w=>`<div class="pick ic crop-${(w.img||'').includes('tags_v3')?'v3':(CROP[g.group]||'half')} ${S.sel[g.group].includes(w.label)?'sel':''}" data-g="${esc(g.group)}" data-w="${esc(w.label)}">${w.img?`<div class="icim"><img src="${w.img}" loading="lazy"></div><b class="zm" data-big="${w.big||w.img}" data-l="${esc(w.label)}" title="看大图">⤢</b>`:`<div class="icim nil">例图生成中</div>`}<span>${esc(w.label)}</span><i class="ck">✓</i></div>`).join('')}${cusChip(g.group)}</div></div>`).join('')}
+ catch(e){$('#tagBox').innerHTML='<div class="err">'+esc(e.message)+'</div>'}
+ const sum=()=>{const v=Object.values(S.sel||{}).flat();$('#selsum').textContent=v.join(' · ')};sum();
+ const pickW=p=>{const g=p.dataset.g,w=p.dataset.w,a=S.sel[g];
+  if(MULTI[g]){if(a.includes(w))S.sel[g]=a.filter(x=>x!==w);else{a.push(w);if(a.length>MULTI[g])a.shift()}}
+  else S.sel[g]=[w];
+  $$(`[data-g="${g}"]`).forEach(x=>x.classList.toggle('sel',S.sel[g].includes(x.dataset.w)));const cc=document.querySelector(`[data-cg="${g}"]`);if(cc)cc.classList.toggle('sel',!!S.cus[g]&&S.sel[g].includes(S.cus[g]));sum()};
+ const useCus=(g,t)=>{const old=S.cus[g];S.cus[g]=t;let a=S.sel[g].filter(x=>x!==old);if(MULTI[g]){a.push(t);if(a.length>MULTI[g])a.shift()}else a=[t];S.sel[g]=a;const y=scrollY;B[2]().then(()=>{scrollTo(0,y);const c=document.querySelector(`[data-cg="${g}"]`);if(c)c.parentElement.scrollLeft=c.parentElement.scrollWidth})};
+ $$('[data-cg]').forEach(c=>c.onclick=()=>{const g=c.dataset.cg,v=S.cus[g];
+  if(v&&!S.sel[g].includes(v))return useCus(g,v);
+  vipGate('自定义'+g,()=>{const ex=CUSPH[g]||[];sheet({title:'自定义'+g,sub:'写你想要的'+g+'，Mari 会照着画',value:v||'',ph:ex[0]?'比如：'+ex[0]:'',ex,ok:'用这个',del:!!v,
+   onDel:()=>{S.sel[g]=S.sel[g].filter(x=>x!==v);delete S.cus[g];if(!MULTI[g]&&!S.sel[g].length){const t=TAGC[ty].groups.find(x=>x.group===g);S.sel[g]=[t.items[0].label]}B[2]()},
+   onOk:async t=>useCus(g,t)})})});
+ $$('[data-w]').forEach(p=>p.onclick=()=>pickW(p));
+ const tlb=$('#tlb');let tcur=null;
+ $$('.zm').forEach(z=>z.onclick=e=>{e.stopPropagation();tcur=z.closest('[data-w]');$('#tlbi').src=z.dataset.big;$('#tlbl').textContent=z.dataset.l;$('#tlbo').textContent=tcur.classList.contains('sel')?'已选 ✓':'选这个';tlb.classList.add('on')});
+ $('#tlbc').onclick=()=>tlb.classList.remove('on');tlb.onclick=e=>{if(e.target===tlb)tlb.classList.remove('on')};
+ $('#tlbo').onclick=()=>{if(tcur&&!tcur.classList.contains('sel'))pickW(tcur);tlb.classList.remove('on')};
+ const ai=async(btn,mode)=>{const all=$$('.chipbtn');all.forEach(b=>b.disabled=true);const o=btn.textContent;btn.textContent='✦ 写着呢…';
+   try{const j=await api('write',{mode,type:S.type,style:S.style,text:[...Object.values(S.sel).flat(),tx.value].filter(Boolean).join('，')});tx.value=j.desc}catch(e){alert(e.message)}finally{all.forEach(b=>b.disabled=false);btn.textContent=o}};
+ $('#aw').onclick=e=>ai(e.target,'write');$('#ap').onclick=e=>ai(e.target,'polish');
+ $('#rf').onclick=async()=>{const f=await pickFile();if(!f)return;const rf=$('#rf'),n=$('#rfn');rf.classList.add('busy');n.textContent='Mari 正在读参考图…';   // 10-09 木木夕：参考图入口挪进描述框右下角
+   try{const j=await upload(f);rf.classList.remove('busy');rf.classList.add('has');rf.innerHTML=`<img src="${j.url}"><span>换一张</span>`;n.textContent='已读取参考图，外形写进描述了';tx.value=(tx.value?tx.value.replace(/[，,。.]$/,'')+'，':'')+j.desc}catch(e){rf.classList.remove('busy');n.textContent='读图失败：'+e.message}};
+ $('#gen').onclick=()=>{S.extra=tx.value.trim();S.desc=[S.cusHint||'',...Object.values(S.sel).flat(),S.extra].filter(Boolean).join('，');go(1)}};
+
+/* 出图（轮询） */
+async function gen(){S.prof=null;S.pick=0;const t0=Date.now();busyMagic("角色诞生中","构思设定…",2,2);
+ const w=['勾勒轮廓…','描绘五官…','穿上衣服…','点亮眼睛…'];let i=0;const PH={'准备':'构思设定','写提示词':'构思设定','排队出图':'等待诞生'};
+ const tk=setInterval(()=>{const s=document.getElementById('sec');if(!s)return clearInterval(tk);s.textContent=Math.round((Date.now()-t0)/1000)+' 秒'},1000);
+ try{const {job,desc}=await api('gen',{type:S.type,style:S.style,desc:S.desc});S.desc=desc;
+  while(true){await new Promise(r=>setTimeout(r,1200));const j=await api('job/'+job);const r=document.getElementById('rot');
+   if(r)r.textContent=j.phase==='出图中'?w[i++%w.length]:(PH[j.phase]||j.phase)+'…';
+   if(j.status==='done'){clearInterval(tk);addSpent(60);lightPetal(2);await new Promise(r=>setTimeout(r,700));S.images=j.images;S.lines=j.lines||[];S.subject=j.subject;S.dbg=`耗时 ${j.sec}s ${j.note||''}<br>tags：${esc(j.tags)}<br>nl：${esc(j.nl)}`;go(3);return}
+   if(j.status==='error')throw new Error(j.err)}}catch(e){clearInterval(tk);fail(e,S.upload?1:2)}}
+
+/* 4 挑选 */
+R[3]=()=>head(3)+`${H("选出","心动","的那一张")}<div class="sub">${S.images.length>1?'点图片看大图':'用你上传的图'}</div>
+<div class="pgrid">${S.images.map((c,k)=>`<div class="pk ${k===S.pick?'sel':''}" data-k="${k}"><img src="${c}"><i>✓</i></div>`).join('')}</div>
+<div class="pline" id="bb">「${esc(S.lines[S.pick]||'')}」</div>
+<div class="reroll">都不满意？${S.keep?'<span onclick="go(1)">换个画风</span>':`<span id="rr">${S.rollMeta&&S.images[0]===S.rollMeta[0].img?'换一批':'重新生成'}</span>·<span onclick="go(1)">换个画风</span>·<span onclick="go(2)">改外形</span>`}</div>
+<div class="dbg">描述：${esc(S.desc)}<br>${S.dbg||''}</div>
+<div class="cta"><button class="btn" id="ok">就是这张</button></div>
+<div class="lbx" id="lbx"><div class="lbin"><img id="lbi"><div class="pline" id="lbl"></div><div class="lbbtn"><button class="btn2" id="lbc">关闭</button><button class="btn" id="lbo">就是这张</button></div></div></div>`+
+note('10-09 木木夕：4 张候选和画风卡一样平铺展示（原比例不裁），点图 = 选中 + 打开大图预览，预览里可以直接「就选 TA 了」；手机端底部主按钮固定在屏幕下方。真实出图：同一个提示词一次出 4 张，台词是 Kimi 写提示词时顺手写的 4 句。「重新生成」= 同描述再出 4 张。');
+B[3]=()=>{const sel=k=>{S.pick=k;S.prof=null;S.cut=null;libApply(k);$$('.pk').forEach(x=>x.classList.toggle('sel',+x.dataset.k===k));$('#bb').textContent='「'+(S.lines[k]||'')+'」'};
+ const lb=$('#lbx'),open=k=>{$('#lbi').src=S.images[k];$('#lbl').textContent='「'+(S.lines[k]||'')+'」';lb.classList.add('on')};
+ $$('.pk').forEach(p=>p.onclick=()=>{const k=+p.dataset.k;sel(k);open(k)});
+ $('#lbc').onclick=()=>lb.classList.remove('on');lb.onclick=e=>{if(e.target===lb)lb.classList.remove('on')};
+ $('#lbo').onclick=()=>{lb.classList.remove('on');profile()};
+ const rr=$('#rr');if(rr)rr.onclick=()=>(S.rollMeta&&S.images[0]===S.rollMeta[0].img)?magicRoll():gen();$('#ok').onclick=()=>profile()};
+
+/* 5 设定 */
+const TRAITS=['温柔治愈','开朗活力','傲娇毒舌','内向软萌','冷酷无情','沉稳可靠','腹黑心机','搞怪幽默'];
+async function profile(){if(S.prof)return go(4);busy('Mari 在帮你补充设定','起名字、想身份…');
+ try{const p=await api('profile',{subject:S.subject,type:S.type,style:S.style,desc:S.desc,line:S.lines[S.pick]});S.prof=p;S.names=p.names||[];S.name=S.names[0]||'';Object.assign(S,ageFrom(p.age,S.subject));S.roles=p.roles||[];S.role=S.roles[0]||'';S.traits=(p.traits||[]).filter(t=>TRAITS.includes(t)).slice(0,3);S.bio=p.bio||'';if(S.roll){S.traits=[S.roll.trait];S.role=S.roll.role;S.roles=[S.roll.role,...S.roles.filter(r=>r!==S.roll.role)].slice(0,4)}go(4)}catch(e){fail(e,S.keep?0:3)}}
+R[4]=()=>head(4)+`<div class="dk dk4"><div class="dkA"><div class="shero"><div class="sbust ${S.cut?'hascut':''}"><img class="ssh" src="${S.cut||S.images[S.pick]}"><img class="sfg ${S.cut?'cut':''}" src="${S.cut||S.images[S.pick]}"></div><div class="sfade"></div><div class="stitle"><h1>补充角色<span class="hand">设定</span></h1><p>Mari 已经帮你填好了，喜欢就直接唤醒</p></div><span class="spaste" id="pasteT">📋 粘贴已有设定</span></div></div><div class="dkB"><div class="stitle2"><h1>补充角色<span class="hand">设定</span></h1><p>Mari 已经帮你填好了，喜欢就直接唤醒</p></div>
+<div id="pasteB" class="pastebox" style="display:none"><textarea class="t" id="lore" rows="4" placeholder="把写好的角色介绍整段贴进来，Mari 帮你拆好填进下面">${esc(S.lore||'')}</textarea><button class="btn2" id="pasteGo" style="margin-top:8px">Mari 帮我填</button></div>
+<label class="f">名字</label><div class="namerow"><input class="t" id="nm" value="${esc(S.name)}"><button class="chipbtn" id="dc" style="height:46px">换一个</button></div>
+<label class="f">一句话介绍</label><input class="t" id="bio" value="${esc(S.bio)}">
+<div class="detw ${S.lore||S.openDet?'open':''}"><button class="dett" id="detT">${S.lore?'✎ 详细设定':'＋ 写详细设定'}<small>可选 · 一句话写不完的放这里</small></button><textarea class="t dettx" id="det" rows="5" placeholder="外形细节、身份、经历、能力、性格、口头禅……想写多少写多少，Mari 会照着写角色主页">${esc(S.lore||'')}</textarea></div>
+<div class="moreset ${S.openMore?'open':''}"><div class="mshead" id="msT"><span>更多设定</span><span class="mssum">${esc([needG()&&S.gender!=='不详'?S.gender:'',S.age==='不详'?'':S.age,S.role,...S.traits].filter(Boolean).join(' · '))}</span><i>›</i></div><div class="msbody">
+${needG()?`<label class="f">性别</label><div class="prow">${GENDERS.map(a=>`<span class="pill ${S.gender===a?'sel':''}" data-g="${a}">${a}</span>`).join('')}</div>`:''}
+<label class="f">年龄感</label><div class="prow">${AGES.map(a=>`<span class="pill ${S.age===a?'sel':''}" data-a="${a}">${a}</span>`).join('')}</div>
+<label class="f">身份</label><div class="prow">${[...S.roles,'自定义…'].map(a=>`<span class="pill ${S.role===a?'sel':''}" data-r="${esc(a)}">${esc(a)}</span>`).join('')}</div>
+<label class="f">性格 · 最多 3 个</label><div class="prow">${TRAITS.map(a=>`<span class="pill ${S.traits.includes(a)?'sel':''}" data-t="${a}">${a}</span>`).join('')}</div></div></div>
+<div class="cta"><button class="btn" id="ok">唤醒角色</button></div></div></div>`+
+note('10-09 木木夕：顶部改成大胸像卡（参考捏他），标题「补充角色设定」，粘贴入口放在胸像右上角。10-08 木木夕嫌复杂，按优先级收：主区只留 名字 + 一句话介绍 + 登场；年龄/身份/性格收进「更多设定」（折叠时显示摘要）；「粘贴已有设定」降成副标题里的文字链，点了才展开。粘贴：用户贴整段角色介绍，Kimi 只按原文拆成名字/年龄/身份/性格/一句话介绍，原文作为 lore 存下来，写角色主页时优先用。Kimi 一次给 5 个候选名（「换一个」轮换）。年龄选项把原型的「幼年」换成了「少年」。');
+B[4]=()=>{let ni=0;
+ // 10-10 木木夕：设定页不展示抠图（等抠图太慢），直接用原图；抠图放到点「唤醒」保存时和主页文案一起做，唤醒页 / 主页用抠好的
+ if(false&&!S.cut&&S.images[S.pick]){const want=S.images[S.pick];api('cutout',{img:want}).then(r=>{if(r&&r.src&&S.images[S.pick]===want){S.cut=r.src;$$('.sbust img').forEach(i=>i.src=r.src);const f=$('.sfg');if(f)f.classList.add('cut');const sb=$('.sbust');if(sb)sb.classList.add('hascut')}}).catch(()=>{})}
+ $('#pasteT').onclick=()=>{const x=$('#pasteB');x.style.display=x.style.display==='none'?'block':'none';if(x.style.display==='block')$('#lore').focus()};
+ // 10-10 木木夕：一句话写不完的角色 → 详细设定（存 lore，主页文案以它为准；粘贴已有设定也会填到这里）
+ $('#detT').onclick=()=>{S.openDet=true;$('.detw').classList.add('open');$('#det').focus()};$('#det').oninput=e=>{S.lore=e.target.value};
+ $('#msT').onclick=()=>{S.openMore=!S.openMore;$('.moreset').classList.toggle('open',S.openMore)};
+ const sum=()=>{$('.mssum').textContent=[needG()&&S.gender!=='不详'?S.gender:'',S.age==='不详'?'':S.age,S.role,...S.traits].filter(Boolean).join(' · ')};
+ $('#pasteGo').onclick=async()=>{const t=$('#lore').value.trim();if(!t)return;const b=$('#pasteGo');b.disabled=true;b.textContent='Mari 在读你的设定…';
+  try{const p=await api('parse_profile',{text:t,type:S.type,desc:S.desc});S.lore=t;
+   if(p.name){S.name=p.name;S.names=[p.name,...S.names.filter(n=>n!==p.name)]}else S.name=$('#nm').value;
+   if(p.age&&p.age!=='不详'){const r=ageFrom(p.age,S.subject);S.age=r.age;if(needG()&&r.gender!=='不详')S.gender=r.gender}
+   if(p.role){S.role=p.role;S.roles=[p.role,...S.roles.filter(r=>r!==p.role)].slice(0,4)}
+   const tr=(p.traits||[]).filter(x=>TRAITS.includes(x)).slice(0,3);if(tr.length)S.traits=tr;if(p.bio)S.bio=p.bio;go(4)}
+  catch(e){alert(e.message);b.disabled=false;b.textContent='Mari 帮我填'}};$('#dc').onclick=()=>{if(S.names.length)$('#nm').value=S.names[++ni%S.names.length]};
+ $$('[data-a]').forEach(p=>p.onclick=()=>{S.age=p.dataset.a;$$('[data-a]').forEach(x=>x.classList.toggle('sel',x===p));sum()});
+ $$('[data-g]').forEach(p=>p.onclick=()=>{S.gender=p.dataset.g;$$('[data-g]').forEach(x=>x.classList.toggle('sel',x===p));sum()});
+ $$('[data-r]').forEach(p=>p.onclick=()=>{let r=p.dataset.r;if(r==='自定义…'){r=prompt('角色的身份是？');if(!r)return;S.roles.push(r);S.role=r;S.name=$('#nm').value;S.bio=$('#bio').value;S.openMore=true;return go(4)}S.role=r;$$('[data-r]').forEach(x=>x.classList.toggle('sel',x===p));sum()});
+ $$('[data-t]').forEach(p=>p.onclick=()=>{const t=p.dataset.t;if(S.traits.includes(t))S.traits=S.traits.filter(x=>x!==t);else if(S.traits.length<3)S.traits.push(t);p.classList.toggle('sel',S.traits.includes(t));sum()});
+ $('#ok').onclick=async()=>{S.name=$('#nm').value.trim()||'无名';S.bio=$('#bio').value;S.lore=$('#det').value.trim();busyMagic(`正在唤醒 ${S.name}`,'角色主页生成中…',3,-1);setTimeout(()=>lightPetal(3),700);setTimeout(()=>lightPetal(4),1400);
+  try{const r=await api('save',{name:S.name,type:S.type,style:S.style,age:S.age,gender:S.gender||TYPE_G[S.type]||'不详',role:S.role,traits:S.traits,bio:S.bio,lore:S.lore||'',desc:S.desc,img:S.images[S.pick],images:S.images,line:S.lines[S.pick],uploaded:!!S.keep});S.cid=r.id;S.hello=r.hello||'';lightPetal(3);lightPetal(4);const m=document.querySelector('.mgc-page');if(m){m.classList.add('burst');m.querySelector('.mcap').textContent=S.name+' 醒来了';await new Promise(r=>setTimeout(r,1000))}go(5)}catch(e){fail(e,4)}}};
+
+/* 6 登场 */
+R[5]=()=>head(5)+`<div style="position:relative;z-index:0;margin:4px 0 2px"><div class="burst"></div><p class="done">DONE</p></div><div class="sub"><b style="color:var(--fg)">${esc(S.name)}</b> 已被唤醒，角色主页已经建好</div>
+<div class="dk dk5"><div class="dkA wrapz"><div class="show pick sel" style="cursor:default"><img class="main" src="${S.images[S.pick]}"><div class="bubble" id="hb" data-t="${esc(S.hello||('我是'+S.name+'，初次见面'))}"><span id="hbt"></span><i class="caret"></i></div><div class="pktip" id="pk">戳一下</div><div class="nametag">「${esc(S.name)}」</div><div class="desc">${esc(S.bio)}</div></div></div>
+<div class="dkB"><div class="gift" style="display:none"><!-- 10-09 木木夕：送表情包先隐藏 --><h4>送你一套 Q 版表情包 <span class="reward">✦ 第一个角色专享</span><span class="tag2">示意</span></h4><div class="stk">${['st_ok','st_cheer','st_shy','st_smug','st_thanks','st_sparkle','st_sorry','st_coffee'].map(s=>`<img src="a/${s}.webp">`).join('')}</div></div>
+<div class="lbl" style="margin-top:20px">接下来和 ${esc(S.name)} 一起玩</div>
+<div class="next">${[['outfit','服装抽卡','抽套衣服换上'],['fortune','运势表情包','抽今日运势'],['pv','出场 PV','15 秒登场动画']].map(x=>`<a href="c/${S.cid}#play=${x[0]}" target="_blank">${x[1]}<small>${x[2]}</small></a>`).join('')}</div>
+<div class="sw" style="margin-top:16px"><div>公开角色主页<small>做完第一个作品后会再问你一次</small></div><div class="tg" onclick="this.classList.toggle('on')"></div></div>
+<div class="sw"><div>允许别人在作品里用 ${esc(S.name)}<small>关闭时，别人只能套用同一个模板、换上自己的角色</small></div><div class="tg" onclick="this.classList.toggle('on')"></div></div>
+<div style="text-align:center;margin:14px 0 4px"><span class="toast">已保存到「我的角色」<img src="a/DROPW.svg"></span></div><div class="cta"><button class="btn" onclick="window.open('c/${S.cid}','_blank')">进入 ${esc(S.name)} 的角色主页</button><button class="btn2" onclick="reset()">再创建一个</button></div></div></div>`+
+note('测试版里表情包、三个模板入口、两个开关、「改图」都还是示意，没有接真实接口。角色主页是简化版（同 VI），文案由 Kimi 按设定现写，不是 feat/library-asset-pages-v2 分支的页面。');
+B[5]=()=>{const hb=document.getElementById('hb'),t=document.getElementById('hbt'),im=document.querySelector('.dk5 img.main');if(!hb)return;   // 10-09 木木夕：对话框弹出 + 逐字出现；点角色 Q 弹抖一下、换下一句（循环主页台词库）
+ let lines=[hb.dataset.t],li=0,tok=0;
+ const say=(s,delay)=>{const my=++tok;hb.classList.remove('pop','fin');void hb.offsetWidth;t.textContent='';
+  setTimeout(()=>{if(my!==tok)return;hb.classList.add('pop');let k=0;setTimeout(function tick(){if(my!==tok||!document.getElementById('hbt'))return;t.textContent=s.slice(0,++k);if(k<s.length)setTimeout(tick,/[，。！？、—…]/.test(s[k-1])?220:65);else hb.classList.add('fin')},380)},delay)};
+ say(lines[0],550);
+ if(S.cid)api('char/'+S.cid).then(c=>{const v=((c.profile||{}).voice||[]).map(x=>x.line).filter(Boolean);if(v.length)lines=[lines[0],...v.filter(x=>x!==lines[0])];
+  const cs=(c.cutout||{}).src;if(cs&&im){const pre=new Image();pre.onload=()=>{im.src=cs;im.classList.add('cut')};pre.src=cs}}).catch(()=>{});   // 10-09 木木夕：只让角色本身抖 → 换成抠好的透明底立绘
+ if(im){im.classList.add('poke');im.onclick=()=>{const pk=document.getElementById('pk');if(pk)pk.classList.add('gone');im.classList.remove('jelly');void im.offsetWidth;im.classList.add('jelly');if(lines.length>1){li=(li+1)%lines.length;say(lines[li],120)}}}};
+
+
+const PETALS=['类型','外形','画风','性格','身份'];
+function mgHTML(cap,vals=[],lit=0,charge=-1){   // 10-09 木木夕 v3：纸上涂鸦 —— 铅笔歪线描两遍、蜡笔乱涂填色、一笔画出来的动画
+ const COL=['#ff8fb8','#ffb36b','#ffd84d','#7fd8a6','#b49cff'];
+ let sd=7;const rnd=()=>{sd=(sd*9301+49297)%233280;return sd/233280};
+ const loop=(r,j,over=1.06)=>{let d='';const n=46;for(let k=0;k<=n*over;k++){const a=k/n*Math.PI*2-1.7,rr=r+(rnd()-.5)*j+Math.sin(k*.7)*j*.3;d+=(k?'L':'M')+(rr*Math.cos(a)).toFixed(1)+','+(rr*Math.sin(a)).toFixed(1)}return d};
+ const PET='M0,-20 C26,-38 46,-86 26,-122 C18,-136 7,-134 0,-120 C-7,-134 -18,-136 -26,-122 C-46,-86 -26,-38 0,-20Z';
+ const scrib=()=>{let d='M-50,-20';for(let y=-20,s=1;y>-140;y-=6.5,s=-s)d+=`L${(s*52+(rnd()-.5)*8).toFixed(1)},${(y-10+(rnd()-.5)*4).toFixed(1)}`;return d};
+ const star=(x,y,s,dl)=>`<g transform="translate(${x},${y}) scale(${s})"><g class="dst" style="animation-delay:${dl}s"><path class="pen draw" pathLength="1" d="M0,-12 L3,-3 L12,-2 L5,4 L7,13 L0,8 L-7,13 L-5,4 L-12,-2 L-3,-3Z"/></g></g>`;
+ return `<div class="mgc-in">
+ <svg viewBox="-210 -210 420 420" class="mgc-svg"><defs>
+  <filter id="pencil"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="1" seed="2" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="2.2" result="d"/><feTurbulence type="turbulence" baseFrequency=".04" numOctaves="2" seed="5" result="w"/><feDisplacementMap in="d" in2="w" scale="4"/></filter>
+  <filter id="crayon"><feTurbulence type="fractalNoise" baseFrequency="1.4" numOctaves="2" seed="9" result="g"/><feColorMatrix in="g" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -2.2 1.6" result="m"/><feComposite in="SourceGraphic" in2="m" operator="in" result="c"/><feTurbulence type="turbulence" baseFrequency=".05" seed="4" result="w"/><feDisplacementMap in="c" in2="w" scale="5"/></filter>
+  <clipPath id="petClip"><path d="${PET}"/></clipPath></defs>
+  <g filter="url(#pencil)">
+   <path class="pen draw slow" pathLength="1" d="${loop(178,9,1.08)}"/><path class="pen draw slow thin" pathLength="1" style="animation-delay:.25s" d="${loop(172,12,1.04)}"/>
+   <path class="pen draw" pathLength="1" style="animation-delay:.4s" d="${loop(146,7,1.05)}"/>
+   <path id="mgT" d="M-160,0a160,160 0 1,1 320,0a160,160 0 1,1 -320,0" fill="none"/><text class="rune"><textPath href="#mgT">kusart ~ mari ~ awaken ~ ♡ ~ kusart ~ mari ~ awaken ~ ♡ ~ kusart ~ mari ~ awaken ~ ♡</textPath></text>
+   ${[0,1,2,3,4].map(i=>`<g transform="rotate(${i*72})"><g id="pet${i}" class="pg ${i<lit?'lit':''} ${i===charge?'chg':''}" style="--c:${COL[i]}">
+     <g clip-path="url(#petClip)"><path class="scr" pathLength="1" filter="url(#crayon)" d="${scrib()}"/></g>
+     <path class="pen draw" pathLength="1" style="animation-delay:${.6+i*.12}s" d="${PET}"/><path class="pen draw thin" pathLength="1" style="animation-delay:${.7+i*.12}s" transform="translate(1.6,1.2) rotate(2)" d="${PET}"/>
+     <path class="pen draw thin" pathLength="1" style="animation-delay:${.9+i*.12}s" d="M0,-34 C3,-62 1,-88 -1,-104"/></g></g>`).join('')}
+   <g class="core"><path class="pen draw" pathLength="1" style="animation-delay:1.2s" d="M-24,-16 L-29,-42 L-8,-28 M24,-16 L29,-42 L8,-28"/><path class="pen draw face" pathLength="1" style="animation-delay:1.1s" d="${loop(30,3,1.02)}"/>
+    <path class="pen" d="M-12,-5 q2,-4 4,0 M8,-5 q2,-4 4,0"/><path class="pen" d="M-6,6 q3,4 6,0 q3,4 6,0"/><path class="blush" filter="url(#crayon)" d="M-24,5 l8,-3 l-7,6 l8,-2 M16,3 l8,-2 l-7,6 l8,-2"/></g>
+  </g>
+  ${star(-158,-150,1.1,0)}${star(166,-128,.8,.5)}${star(-178,112,.9,1)}${star(150,156,1.15,.3)}${star(4,-200,.7,.8)}
+ </svg>
+ ${PETALS.map((l,i)=>`<div class="mlb ${i<lit?'lit':''}" id="mlb${i}" style="--a:${i*72}deg;--c:${COL[i]}"><b>${l}</b><span>${esc(vals[i]||'？')}</span></div>`).join('')}
+ <div class="mcap">${esc(cap)}</div><div class="rot mrot" id="rot"></div><div class="sec msec" id="sec"></div></div>`}
+// 10-09 木木夕：魔法阵也用进创建流程 —— 每完成一个板块点亮一片花瓣；出图和唤醒的等待页换成魔法阵
+const styName=()=>(S.styleName||'').replace(/^Kusa-XL · /,'').replace(/^.*（(.*)）$/,'$1')||(S.keep?'原图画风':'');
+const petVals=()=>[S.type||'',styName(),(S.desc||'').split(/[，,]/).filter(Boolean).slice(0,2).join(' · '),(S.traits||[])[0]||'',S.role||''];
+function busyMagic(cap,sub){busy(cap,sub)}
+function lightPetal(i){const p=document.getElementById('pet'+i),l=document.getElementById('mlb'+i);if(p){p.classList.remove('chg');p.classList.add('lit')}if(l){l.classList.add('lit');l.querySelector('span').textContent=petVals()[i]||'✓'}}
+const LIT=[0,2,1,3,3,5];   // 每一步进来时已点亮几片：类型→画风→外形(出图后)→设定页点唤醒时补齐性格+身份
+const mini=i=>{const n=LIT[i]||0;return `<span class="mini" title="${PETALS.map((l,k)=>l+(k<n?' ✓':'')).join(' · ')}"><svg viewBox="-150 -150 300 300">${[0,1,2,3,4].map(k=>`<g transform="rotate(${k*72})"><path class="${k<n?'on':''} ${k===n-1&&i>0?'new':''}" style="--c:${['#ff8fb8','#ffb36b','#ffd84d','#7fd8a6','#b49cff'][k]}" d="M0,-20 C26,-38 46,-86 26,-122 C18,-136 7,-134 0,-120 C-7,-134 -18,-136 -26,-122 C-46,-86 -26,-38 0,-20Z"/></g>`).join('')}<circle r="22"/></svg><em>${n}/5</em></span>`};
+/* 10-09 木木夕：「随便来一个」= 五瓣花魔法阵。五片花瓣依次抽出 类型 / 画风 / 外形 / 性格 / 身份，化成魔法元素融进阵心，再进入出图 */
+const ROLES=['魔法学徒','旧书店店员','街机主播','见习骑士','星象占卜师','咖啡店打工生','神社巫女','宇宙快递员','偶像练习生','侦探助手','花店店主','夜间电台主播'];
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+// 10-09 木木夕：「随便来一个」= 从已经跑好的角色库里随机抽 4 个不同类型、不同画风的角色，不再现出图（免费、秒出）
+const LIBDESC={'少女':'长棕发，白衬衫红领结，藏青百褶裙，白袜乐福鞋','御姐':'黑色长卷发，白衬衫，米色长裙，高跟鞋','假小子':'黑短发，反戴棒球帽，宽松黑色印花T恤，工装短裤，运动鞋',
+ '少年':'黑短发，白衬衫，藏青西装校服，灰裤子，运动鞋','熟男':'黑短发，淡淡胡茬，白衬衫，深灰西装，领带','男娘':'红色短发，黑色发带，黑色荷叶边外套裙，格子围巾，黑色裤袜','Furry':'橙色毛的兽人狐狸，白色胸毛，蓬松尾巴，白色连帽卫衣，短裤，运动鞋'};
+const LIBLINE={'少女':'你好呀，今天也一起加油吧！','御姐':'初次见面，要不要一起喝杯茶？','假小子':'嘿！要不要来比一场？','少年':'啊，你也是来这边的吗？','熟男':'坐吧，慢慢说，我听着。','男娘':'这条围巾……好看吗？','Furry':'尾巴可以摸一下哦，就一下！'};
+const LIBSUB={'少女':'girl','御姐':'woman','假小子':'girl','少年':'boy','熟男':'man','男娘':'boy','Furry':'anthro'};
+let ROLL_LIB=null;
+async function magicRoll(){
+ // 10-09 木木夕：去掉花朵召唤动画，直接进挑选页
+ if(!ROLL_LIB)ROLL_LIB=await fetch('a/roll_lib.json?v=1009').then(r=>r.json()).catch(()=>null);
+ if(!ROLL_LIB)return alert('角色库加载失败，再试一次');
+ const tys=Object.keys(ROLL_LIB).filter(t=>ROLL_LIB[t].length).sort(()=>Math.random()-.5).slice(0,4);
+ const meta=tys.map(t=>{const c=pick(ROLL_LIB[t]);return {type:t,style:c,img:`sx8/${encodeURIComponent(t)}_${c}.webp`,desc:LIBDESC[t]||'',subject:LIBSUB[t]||'',line:LIBLINE[t]||''}});
+ const trait=pick(TRAITS),role=pick(ROLES);
+ Object.assign(S,{images:meta.map(m=>m.img),lines:meta.map(m=>m.line),rollMeta:meta,cusPick:null,cusHint:'',pick:0,upload:null,keep:false,custom:null,roll:{trait,role},prof:null,cut:null,dbg:'角色库：'+meta.map(m=>m.type+' '+m.style).join(' / ')});
+ libApply(0);go(3)}
+function libApply(k){const m=S.rollMeta&&S.rollMeta[k];if(!m||S.images[k]!==m.img)return;Object.assign(S,{type:m.type,style:m.style,desc:m.desc,subject:m.subject,sel:null,styleName:''})}
+
+go(0);
+</script></body></html>
