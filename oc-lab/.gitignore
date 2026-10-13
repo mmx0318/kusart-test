@@ -1,0 +1,9 @@
+.env
+__pycache__/
+*.pyc
+chars/
+u/
+data/
+adult/gen/
+adult/oc/
+adult/custom_requests.jsonl

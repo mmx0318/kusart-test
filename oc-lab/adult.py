@@ -57,6 +57,7 @@ def adult_custom():   # 10-10 木木夕：自定义剧情（会员专属）—�
   rec={k:str(d.get(k,''))[:200] for k in ('type','name','place','relation','note')}; rec['moods']=[str(x)[:8] for x in (d.get('moods') or [])][:6]
   if not rec['place'] or not rec['relation']: return jsonify(error='缺少场景或关系'),400
   rec['created']=_t.strftime('%Y-%m-%d %H:%M:%S')
+  os.makedirs(os.path.join(HERE,'adult'),exist_ok=True)
   with open(os.path.join(HERE,'adult','custom_requests.jsonl'),'a') as f: f.write(_j.dumps(rec,ensure_ascii=False)+'\n')
   return jsonify(ok=True)
 @bp.get('/adult.js')
@@ -72,8 +73,14 @@ def init(app_mod):
   global A; A=app_mod
 GEN=os.path.join(AD,'gen'); os.makedirs(GEN,exist_ok=True); WORKS=os.path.join(GEN,'works.jsonl')
 MALE={'型男','熟男','兽人'}; GJOBS={}
-def _tags(): return json.load(open(os.path.join(AD,'pose_tags.json')))
-def _album(): return json.load(open(os.path.join(CARDS,'album.json')))
+def _tags():
+  p=os.path.join(AD,'pose_tags.json')
+  if not os.path.isfile(p): return {'cats':[]}
+  return json.load(open(p))
+def _album():
+  p=os.path.join(CARDS,'album.json')
+  if not os.path.isfile(p): return {}
+  return json.load(open(p))
 @bp.get('/adult/pose_tags')
 def pose_tags(): r=jsonify(_tags()); r.headers['Cache-Control']='no-store'; return r
 def _picks_en(picks,g,cats=None):

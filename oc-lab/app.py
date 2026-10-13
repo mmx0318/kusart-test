@@ -4,22 +4,52 @@ from concurrent.futures import ThreadPoolExecutor
 from flask import Flask,request,jsonify,send_file,redirect,make_response,abort
 from PIL import Image
 HERE=os.path.dirname(os.path.abspath(__file__))
-ENV=dict(l.strip().split('=',1) for l in open(os.path.join(HERE,'.env')) if '=' in l)
-OR_KEY=ENV['OPENROUTER_API_KEY']; KIMI='moonshotai/kimi-k2.6'; VISION='google/gemini-2.5-flash'; FAST='google/gemini-2.5-flash'   # 10-08：写提示词这步要快，Kimi 2.5~20s 不稳
-ANSWER=ENV.get('TEAM_ANSWER','kusart'); SECRET=hashlib.sha256(('oc-lab:'+ANSWER).encode()).digest()
-B="https://api.kusa.pics/api/go"; BASE='/oc-lab/'
+def _load_dotenv(path):
+  if not os.path.isfile(path): return
+  for raw in open(path,encoding='utf-8'):
+    l=raw.strip()
+    if not l or l.startswith('#') or '=' not in l: continue
+    k,v=l.split('=',1); k,v=k.strip(),v.strip()
+    if len(v)>=2 and v[0]==v[-1] and v[0] in '"\'': v=v[1:-1]
+    os.environ.setdefault(k,v)
+_load_dotenv(os.path.join(HERE,'.env'))
+def envget(k,default=''): return os.environ.get(k,default)
+def _flag(k): return envget(k,'').strip().lower() in ('1','true','yes','on')
+OR_KEY=envget('OPENROUTER_API_KEY'); KIMI='moonshotai/kimi-k2.6'; VISION='google/gemini-2.5-flash'; FAST='google/gemini-2.5-flash'   # 10-08：写提示词这步要快，Kimi 2.5~20s 不稳
+ANSWER=envget('TEAM_ANSWER','kusart'); SECRET=hashlib.sha256(('oc-lab:'+ANSWER).encode()).digest()
+DEV_BYPASS=_flag('OC_LAB_DEV_BYPASS_AUTH')
+B="https://api.kusa.pics/api/go"
+# python app.py 直接跑在 /；gunicorn 等导入时仍默认 /oc-lab/，可用 OC_LAB_BASE 覆盖
+BASE=envget('OC_LAB_BASE','/' if __name__=='__main__' else '/oc-lab/')
+if not BASE.startswith('/'): BASE='/'+BASE
+if not BASE.endswith('/'): BASE+='/'
 app=Flask(__name__); POOL=ThreadPoolExecutor(8)
 app.config['MAX_CONTENT_LENGTH']=12*1024*1024
+for _d in ('chars','u','adult','data'): os.makedirs(os.path.join(HERE,_d),exist_ok=True)
+
+def _pick_dir(env_key,local_rel,legacy):
+  v=envget(env_key).strip()
+  if v: return os.path.expanduser(v)
+  if legacy and os.path.isdir(legacy): return legacy
+  return os.path.join(HERE,local_rel)
+def _read_text(path):
+  if not os.path.isfile(path): return ''
+  try: return open(path,encoding='utf-8').read()
+  except Exception: return ''
 
 # ---------- 画风：按角色类型推荐（10-08 木木夕：复用风格 Jev = style-lab 的 router_v8 + 精选池 tblDUKN4，只取 Anima）
-SD='/home/admin/kusa-bot/.tmp/style_demo'; TMP='/home/admin/kusa-bot/.tmp'
-AID={}; ANAME={}
-for l in open(os.path.join(SD,'anima_db.tsv')):
+# 宿主机目录在就用；没有就落到 oc-lab/data/。缺 anima_db.tsv 时推荐仍走随包的 sx8 例图。
+SD=_pick_dir('OC_LAB_STYLE_DEMO','data/style_demo','/home/admin/kusa-bot/.tmp/style_demo')
+TMP=_pick_dir('OC_LAB_TMP','data/tmp','/home/admin/kusa-bot/.tmp')
+UNI=_pick_dir('OC_LAB_STYLE_UNI','data/style-lab/uni','/home/admin/style-lab/uni')
+AID={}; ANAME={}; IDNAME={}; IDCODE={}
+for l in _read_text(os.path.join(SD,'anima_db.tsv')).splitlines():
   p=l.rstrip('\n').split('\t')
-  if len(p)>2: AID.setdefault(p[2],p[0]); ANAME.setdefault(p[2],p[1])
+  if not p or not p[0]: continue
+  if len(p)>1: IDNAME.setdefault(p[0],p[1])
+  if len(p)>2: AID.setdefault(p[2],p[0]); ANAME.setdefault(p[2],p[1]); IDCODE.setdefault(p[0],p[2])
 AID['A-303']='anima_1787750254900877169'
 XLNAME={}
-IDNAME={l.split('\t')[0]:l.split('\t')[1] for l in open(os.path.join(SD,'anima_db.tsv')) if '\t' in l}
 def sname(c):
   if isinstance(c,str) and c[:1]=='S' and c[1:].isdigit():
     if not XLNAME:
@@ -67,13 +97,13 @@ SHORT={'清新·少女漫':'清新少女漫','日系赛璐珞':'日系动画','�
 STYC={}
 def ex_rel(c,mk):
   if mk and os.path.exists(os.path.join(TMP,f'maletest/img/{AID.get(c,"")}__{mk}.jpg')): return os.path.join(TMP,f'maletest/img/{AID[c]}__{mk}.jpg')
-  if os.path.exists(f'/home/admin/style-lab/uni/{c}.jpg'): return f'/home/admin/style-lab/uni/{c}.jpg'
+  uni=os.path.join(UNI,f'{c}.jpg')
+  if os.path.exists(uni): return uni
   p=os.path.join(TMP,f'anima_styles/img/{AID.get(c,"")}.jpg'); return p if os.path.exists(p) else None
 # 10-08 木木夕：推荐要按类型拉开（少女≠萝莉、少年≠正太），Jev 精选池只有 29 个 Anima 风格、按大类取第一必撞，
 # 改成人工排序：mkstyles8.py 8 类 × 29 风格各用类型提示词实跑一张（sx8/），茉莉逐类看图排出 curated8.json。
 # 例图：Furry / 异种用 sx8 的类型提示词图（要看得出兽头/恶魔）；其余类型按木木夕 10-08 口径继续用原例图（女=uni 统一提示词，男=maletest）
 CURATED=json.load(open(os.path.join(HERE,'curated8.json')))
-IDCODE={l.split('\t')[0]:l.rstrip('\n').split('\t')[2] for l in open(os.path.join(SD,'anima_db.tsv')) if l.count('\t')>=2}
 SX8_TYPES=tuple(TYPE_Q)   # 10-08：萝莉配原 uni 例图会出成年大胸女、正太配美少年例图像高中生，推荐拉不开 → 8 类全用 sx8 类型提示词图（同类同一句提示词，第一张卡也一样）
 def ex_id(sid,typ,mk):
   if typ in SX8_TYPES:
@@ -81,7 +111,7 @@ def ex_id(sid,typ,mk):
     return f'sx8/{typ}_{sid}.webp?v=%d'%(os.path.getmtime(p) if os.path.exists(p) else 0)
   if mk and os.path.exists(os.path.join(TMP,f'maletest/img/{sid}__{mk}.jpg')): return f'exi/{sid}?mk={mk}'
   c=IDCODE.get(sid,''); 
-  if c and AID.get(c)==sid and os.path.exists(f'/home/admin/style-lab/uni/{c}.jpg'): return f'exi/{sid}'
+  if c and AID.get(c)==sid and os.path.exists(os.path.join(UNI,f'{c}.jpg')): return f'exi/{sid}'
   if os.path.exists(os.path.join(TMP,f'anima_styles/img/{sid}.jpg')): return f'exi/{sid}'
   return f'sx8/{typ}_{sid}.webp'
 def recommend(typ):
@@ -98,7 +128,7 @@ def recommend(typ):
 @app.route('/exi/<sid>')
 def exi(sid):
   sid=os.path.basename(sid); mk=request.args.get('mk',''); c=IDCODE.get(sid,'')
-  for p in ([os.path.join(TMP,f'maletest/img/{sid}__{mk}.jpg')] if mk else [])+([f'/home/admin/style-lab/uni/{c}.jpg'] if c and AID.get(c)==sid else [])+[os.path.join(TMP,f'anima_styles/img/{sid}.jpg')]:
+  for p in ([os.path.join(TMP,f'maletest/img/{sid}__{mk}.jpg')] if mk else [])+([os.path.join(UNI,f'{c}.jpg')] if c and AID.get(c)==sid else [])+[os.path.join(TMP,f'anima_styles/img/{sid}.jpg')]:
     if os.path.exists(p): return send_file(p,max_age=86400)
   abort(404)
 @app.route('/lab/<name>')   # 10-09 视觉方案对比页（魔法阵等）
@@ -109,6 +139,7 @@ def sx8img(name): p=os.path.join(HERE,'sx8',os.path.basename(name)); return send
 
 # ---------- 文字模型
 def llm(system,user,model=KIMI,img=None,tries=2):
+  if not OR_KEY: raise RuntimeError('没有配置 OPENROUTER_API_KEY')
   content=user if not img else [{'type':'text','text':user},{'type':'image_url','image_url':{'url':img}}]
   body={'model':model,'response_format':{'type':'json_object'},'messages':[{'role':'system','content':system},{'role':'user','content':content}]}
   if model==KIMI: body.update(provider={'order':['Fireworks','Together','Inceptron','DeepInfra'],'allow_fallbacks':True},reasoning={'enabled':False})
@@ -153,7 +184,16 @@ def read_image(url):
              '读出这张角色图里角色的外形。',model=VISION,img=url)
 
 # ---------- 出图（走木木夕的 prod 账号，同 style-lab）
-H=lambda:{"Authorization":"Bearer "+open('/home/admin/.mmx_id_token').read().strip(),"Content-Type":"application/json"}
+def _file_secret(env_name,path_env,default_path):
+  v=envget(env_name).strip()
+  if v: return v
+  p=os.path.expanduser(envget(path_env).strip() or default_path)
+  if p and os.path.isfile(p): return open(p).read().strip()
+  return ''
+def H():
+  tok=_file_secret('OC_LAB_MMX_TOKEN','OC_LAB_MMX_TOKEN_FILE','/home/admin/.mmx_id_token')
+  if not tok: raise RuntimeError('缺少出图凭证：设置 KUSA_B2B_KEY，或 OC_LAB_MMX_TOKEN')
+  return {"Authorization":"Bearer "+tok,"Content-Type":"application/json"}
 NEG='worst quality, low quality, blurry, jpeg artifacts, watermark, text, signature, multiple views, split screen, extra arms, extra legs, nsfw, nude, topless, cleavage, cropped, close-up, upper body, portrait, cowboy shot, out of frame, cut off feet, multiple views, character sheet, multiple girls, multiple boys, 2girls, 3girls, 2boys, 3boys, clone, logo, english text, chinese text'
 # 10-08 木木夕：强制全身立绘（主页首屏舞台要全身，半身会像被切掉）
 FULL='full body, standing, solo, from head to toe, shoes, feet visible, wide shot, centered character, simple background, white background'
@@ -176,7 +216,7 @@ def anima_body(style,tags,nl,n,typ=''):
   elif style in AID: p["style_ids"]=[AID[style]]
   return {"task_type":"ANIMA_TEXT_TO_IMAGE","params":p}
 # 10-11 木木夕：测试账号积分用完 → 改走 KusArt B2B 接口（X-API-Key，key 在 ~/.kusa_b2b_key，扣 API 账户积分，价格=站内价）；没有 key 文件才回退木木夕账号
-B2B_KEY=(open(os.path.expanduser('~/.kusa_b2b_key')).read().strip() if os.path.exists(os.path.expanduser('~/.kusa_b2b_key')) else '')
+B2B_KEY=_file_secret('KUSA_B2B_KEY','KUSA_B2B_KEY_FILE','~/.kusa_b2b_key')
 HB=lambda:{'X-API-Key':B2B_KEY,'Content-Type':'application/json','User-Agent':'Mozilla/5.0'}
 def tget(tid):   # 查任务：先 B2B，查不到（旧任务是木木夕账号建的）再用她的 token
   if B2B_KEY:
@@ -200,7 +240,9 @@ def create(b):
     except Exception as e: r={'message':str(e)}
     tid=(r.get('data') or {}).get('task_id')
     if tid: return tid,None
-    subprocess.run(["python3","/home/admin/kusa-bot/debug/mint_mmx_token.py"],capture_output=True); time.sleep(2)
+    mint=envget('OC_LAB_MINT_TOKEN','/home/admin/kusa-bot/debug/mint_mmx_token.py')
+    if os.path.isfile(mint): subprocess.run(["python3",mint],capture_output=True)
+    time.sleep(2)
   return None,str(r.get('message') or r)[:200]
 def wait(tid):
   for _ in range(480):
@@ -233,10 +275,17 @@ def runjob(jid):
 # ---------- 登录（问题同 image-router-lab / style-lab）
 def sign(v): return v+'.'+hmac.new(SECRET,v.encode(),hashlib.sha256).hexdigest()
 def authed():
+  if DEV_BYPASS: return True
   c=request.cookies.get('ol','')
   if '.' not in c: return False
   v,_=c.rsplit('.',1)
   return hmac.compare_digest(sign(v),c) and time.time()<float(v)
+def cookie_secure():
+  flag=envget('OC_LAB_COOKIE_SECURE','').strip().lower()
+  if flag in ('1','true','yes','on'): return True
+  if flag in ('0','false','no','off'): return False
+  if __name__!='__main__': return True
+  return bool(request.is_secure)
 @app.before_request
 def gate():
   if request.path.rstrip('/').endswith('/login'): return
@@ -246,7 +295,7 @@ def gate():
 @app.route('/login',methods=['GET','POST'])
 def login():
   if request.method=='POST' and request.form.get('a','').strip().lower()==ANSWER:
-    r=make_response(redirect(BASE)); r.set_cookie('ol',sign(str(time.time()+43200)),httponly=True,secure=True,samesite='Lax',max_age=43200,path=BASE); return r
+    r=make_response(redirect(BASE)); r.set_cookie('ol',sign(str(time.time()+43200)),httponly=True,secure=cookie_secure(),samesite='Lax',max_age=43200,path=BASE); return r
   return f'''<meta name=viewport content="width=device-width,initial-scale=1"><title>创建角色 · 测试</title><body style="font-family:sans-serif;display:flex;height:90vh;align-items:center;justify-content:center;background:#F8F7F7">
 <form method=post style="background:#fff;padding:28px;border-radius:16px;border:1px solid #E0E2E6">
 <div style="margin-bottom:12px">我们的产品名字叫什么？（全小写）</div><input name=a autofocus style="font-size:16px;padding:8px;width:220px"> <button style="padding:8px 14px">进入</button>
@@ -491,4 +540,5 @@ def oops(e):
 # 10-10 木木夕：角色主页延展玩法（服装抽卡 / 运势表情包 / 出场 PV）
 import sys as _sys, plays; plays.init(_sys.modules[__name__]); app.register_blueprint(plays.bp)
 import adult; adult.init(_sys.modules[__name__]); app.register_blueprint(adult.bp)   # 10-10 成人模式（类型卡 / 剧情列表 / 互动剧情播放器）
-if __name__=='__main__': app.run('127.0.0.1',8791,threaded=True)
+import ask_agent; ask_agent.init(_sys.modules[__name__]); app.register_blueprint(ask_agent.bp)
+if __name__=='__main__': app.run(envget('OC_LAB_HOST','127.0.0.1'),int(envget('OC_LAB_PORT','8791') or '8791'),threaded=True)
