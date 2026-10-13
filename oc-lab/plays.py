@@ -7,6 +7,22 @@ from PIL import Image
 bp=Blueprint('plays',__name__)
 HERE=os.path.dirname(os.path.abspath(__file__))
 A=None   # app 模块（llm / POOL 等），init() 时注入
+def _opt_text(path,default=''):
+  try:
+    with open(path,encoding='utf-8') as f: return f.read()
+  except OSError: return default
+def _opt_json(path,default):
+  try:
+    with open(path,encoding='utf-8') as f: return json.load(f)
+  except (OSError,ValueError): return default
+def _opt_jsonl(path):
+  try:
+    with open(path,encoding='utf-8') as f: return [json.loads(l) for l in f if l.strip()]
+  except OSError: return []
+def _key(env,path):
+  k=os.environ.get(env,'').strip()
+  if k: return k
+  return open(path).read().strip()
 PJOBS={}
 def init(app_mod):
   global A,SIGN_P; A=app_mod
@@ -39,7 +55,7 @@ def gender(c):
   return g
 
 # ---------- GPT Image 2 edits（同表情包大盗；公司 OpenAI 账号，不扣站内积分）
-OAI=lambda:open('/home/admin/.openclaw/openai_key.txt').read().strip()
+OAI=lambda:_key('OPENAI_API_KEY','/home/admin/.openclaw/openai_key.txt')
 def gpt_edit(prompt,images,size='1024x1536'):
   files=[('image[]',(f'i{i}.png',b,'image/png')) for i,b in enumerate(images)]
   for k in range(3):
@@ -78,7 +94,7 @@ def pjob(jid):
 
 # ========== 1. 服装抽卡机
 # R  = 本类型的 5 个日常穿着（tag 例图）；SR = 同性别其他类型的穿着；SSR = oc-editor 的万圣节 / 圣诞整套（金框）
-OUT=[json.loads(l) for l in open(os.path.join(HERE,'plays','outfits.jsonl')) if l.strip()]
+OUT=_opt_jsonl(os.path.join(HERE,'plays','outfits.jsonl'))
 SSR=[o for o in OUT if o['theme'] in ('christmas','halloween')]
 FEM=re.compile(r'lolita|dress|skirt|princess|witch|qipao',re.I)
 G_TYPES={'女':['少女','御姐','假小子'],'男':['少年','熟男'],'':['Furry']}
@@ -88,7 +104,7 @@ def tag_outfits(t):
 def tag_img(t,l):
   import tags_def; return tags_def.imgkey(t,'穿着',l) if hasattr(tags_def,'imgkey') else ''
 # 10-10 木木夕：卡池扩到 oc-editor 全部服装 / 配饰素材（248 个，缩略图缓存在 plays/thumbs）
-ED=json.load(open(os.path.join(HERE,'plays','editor_items.json')))
+ED=_opt_json(os.path.join(HERE,'plays','editor_items.json'),[])
 FULL_CATS=('clothing_casual','clothing_formal','clothing_traditional','clothing_uniform','clothing_sportswear','clothing_dress')
 CAT_CN={'hats':'帽子','hair_ornaments':'发饰','earrings':'耳饰','gloves':'手套','neck_accessories':'颈饰','accessories_wrists':'腕饰','accessories_torso':'腰饰','accessories_legs':'腿饰',
   'special_features':'特殊部件','socks':'袜子','stockings':'长袜','footwear':'鞋子','clothing_top':'上衣','clothing_bottom':'下装','clothing_casual':'休闲','clothing_formal':'正装',
@@ -117,6 +133,7 @@ def outfit_pool_api(cid):
 @bp.post('/api/play/outfit/draw')
 def outfit_draw():
   d=request.json; _,c=char(d['cid']); R,SR,S=outfit_pool(c)
+  if not (R or SR or S): return jsonify(error='本地没有服装卡池（plays/editor_items.json、plays/outfits.jsonl）'),404
   n=max(1,min(10,int(d.get('n') or 1))); out=[]
   for i in range(n):
     r=random.random(); pool=S if r<.1 and S else SR if r<.4 and SR else R
@@ -148,7 +165,7 @@ def outfit_make_api():
   d=request.json; char(d['cid']); return jsonify(job=job('outfit',d['cid'],outfit_make,d['cid'],d['card']))
 
 # ========== 2. 运势表情包抽卡机：三个关键词 → 运势档位 → 表情包大盗模板 → 和角色融合
-FM=json.load(open(os.path.join(HERE,'plays','meme_fortune_map.json')))
+FM=_opt_json(os.path.join(HERE,'plays','meme_fortune_map.json'),{})
 LV=[('大吉',.12),('吉',.23),('小吉',.25),('平',.22),('凶',.18)]
 KW={'大吉':['暴富','桃花朵朵','灵感爆棚','万事顺遂','好运加满','被夸夸','心想事成','欧气冲天','贵人相助','满分发挥'],
     '吉':['小确幸','有人请客','奶茶自由','顺风顺水','被偏爱','好消息','状态在线','宜出门','摸鱼成功','好吃的'],
@@ -162,6 +179,7 @@ def fortune_draw():
   for lv,p in LV:
     acc+=p
     if r<acc: break
+  if not FM.get(lv): return jsonify(error='本地没有运势模板（plays/meme_fortune_map.json）'),404
   kws=random.sample(KW[lv],3); tpl=random.choice(FM[lv])
   sign=''
   try:
@@ -170,7 +188,7 @@ def fortune_draw():
   except Exception: pass
   return jsonify(level=lv,keywords=kws,template=dict(id=tpl['id'],url=tpl['file_or_url'],desc=tpl['desc']),sign=sign,
                  reels={k:random.sample(sum(KW.values(),[]),8) for k in range(3)})
-MEME_P=open(os.path.join(HERE,'plays','meme_v2_prompt.txt')).read()
+MEME_P=_opt_text(os.path.join(HERE,'plays','meme_v2_prompt.txt'))
 def fortune_make(j,cid,tpl,lv,kws=None,sign=''):
   _,c=char(cid); j['phase']='表情包融合中'
   tb=load_bytes(tpl['url']); w,h=Image.open(io.BytesIO(tb)).size; r=w/h
@@ -193,8 +211,8 @@ def fortune_make_api():
   d=request.json; char(d['cid']); return jsonify(job=job('meme',d['cid'],fortune_make,d['cid'],d['template'],d.get('level',''),d.get('keywords') or [],d.get('sign') or ''))
 
 # ========== 3. 角色出场 PV（H3-max T04：13 镜头 15s，参考图模式，768P）
-T04=open(os.path.join(HERE,'plays','t04_skeleton.txt')).read()
-H3K=lambda:open('/home/admin/.openclaw/minimax_h3max_key2.txt').read().strip()
+T04=_opt_text(os.path.join(HERE,'plays','t04_skeleton.txt'))
+H3K=lambda:_key('MINIMAX_API_KEY','/home/admin/.openclaw/minimax_h3max_key2.txt')
 def public_url(c):
   src=c.get('img') or ''
   if src.startswith('http'): return src

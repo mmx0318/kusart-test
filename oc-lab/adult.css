@@ -311,3 +311,23 @@ body.adult .back{color:var(--ad-mut);background:transparent;border-color:var(--a
 /* 10-11 从灯箱里点「做成视频」：视频面板要盖在灯箱（z110）上面；灯箱图压矮一点，让「做成视频」按钮一屏内可见 */
 .ad-cussh.ad-vsh{z-index:130}
 .ad-lbi img{max-height:min(74vh,calc(100vh - 260px))}
+.ad-askb{font-size:12px;white-space:nowrap}
+#adAskFab{position:fixed;right:18px;bottom:calc(18px + env(safe-area-inset-bottom));z-index:40;height:44px;padding:0 16px;border:0;border-radius:999px;background:var(--ad-wine);color:#fff;font:700 14px "Noto Sans SC",sans-serif;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,.28)}
+#adAskFab:hover{background:#A3284A}
+.ad-ask{position:fixed;inset:0;z-index:160;background:rgba(10,3,6,.72);display:flex;align-items:flex-end;justify-content:center;padding:16px;opacity:0;transition:opacity .2s}
+.ad-ask.on{opacity:1}
+.ad-ask-box{width:min(480px,100%);max-height:min(86vh,760px);overflow:auto;background:var(--ad-card);color:var(--ad-fg);border:1px solid var(--ad-bd);border-radius:18px;padding:16px 16px 18px;display:flex;flex-direction:column;gap:10px}
+.ad-ask-h{display:flex;align-items:center;justify-content:space-between}
+.ad-ask-h b{font-size:16px}
+.ad-ask-h button{width:32px;height:32px;border-radius:50%;border:1px solid var(--ad-bd);background:transparent;color:var(--ad-fg);cursor:pointer;font-size:18px}
+.ad-ask label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--ad-mut)}
+.ad-ask textarea{width:100%;box-sizing:border-box;border-radius:10px;border:1px solid var(--ad-bd);background:#14080c;color:var(--ad-fg);padding:8px 10px;font:14px/1.5 "Noto Sans SC",sans-serif;resize:vertical}
+.ad-ask-ck{flex-direction:row!important;align-items:center;gap:8px;color:var(--ad-fg)}
+.ad-ask-out{font-size:14px;line-height:1.55}
+.ad-ask-out h4{margin:12px 0 4px;font-size:13px;color:var(--ad-rose2)}
+.ad-ask-out ol,.ad-ask-out p{margin:0 0 6px}
+.ad-ask-out pre{white-space:pre-wrap;word-break:break-word;background:#14080c;border-radius:10px;padding:8px 10px;font-size:12px;margin:0}
+.ad-ask-src{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ad-rose2)}
+.ad-ask-notes{color:var(--ad-mut);font-size:12px}
+.ad-ask-err{color:#F0A3B7}
+@media (min-width:720px){.ad-ask{align-items:center}}

@@ -11,11 +11,11 @@ const TYPES=[['御姐','yujie','成熟 · 掌控感'],['甜心','tianxin','甜�
   ['型男','xingnan','冷峻 · 肌肉线条'],['熟男','shunan','沉稳 · 大叔'],['魅魔','meimo','魅惑 · 恶魔'],['兽人','shouren','野性 · 毛茸茸']];
 const PLACE=['温泉偶遇','酒店房间','情人节礼物','周末早晨'];
 const st=()=>document.getElementById('st');
-let STORIES=null,curType=null,io=null;
+let STORIES=null,curType=null,io=null,ASK=null;
 
 const AD=window.AD={on:LS('ol_adult')==='1',home,openType,play};
 function apply(){document.body.classList.toggle('adult',AD.on);const t=document.getElementById('adT');if(t)t.checked=AD.on;
- const m=document.querySelector('meta[name=theme-color]');if(m)m.content=AD.on?'#12070B':'#F8F7F7'}
+ const m=document.querySelector('meta[name=theme-color]');if(m)m.content=AD.on?'#12070B':'#F8F7F7';mountAskFab()}
 apply();
 document.addEventListener('DOMContentLoaded',()=>{const oc=new URLSearchParams(location.search).get('adult_oc');   // 10-10 普通角色主页「成人模式」按钮跳过来
  const vw=new URLSearchParams(location.search).get('vid');
@@ -120,7 +120,7 @@ async function play(id){closePlayer();
  o.innerHTML=`<div class="ad-fr"><img class="ad-poster" alt=""><video playsinline webkit-playsinline x5-playsinline x5-video-player-type="h5-page" disablepictureinpicture controlslist="nodownload nofullscreen noremoteplayback" preload="auto"></video><video class="off" playsinline webkit-playsinline x5-playsinline x5-video-player-type="h5-page" disablepictureinpicture controlslist="nodownload nofullscreen noremoteplayback" preload="auto"></video>
   <div class="ad-wip"><b>这段还在制作中</b><small>素材做好后这里会自动出现</small></div>
   <div class="ad-tb"><button class="ad-ic" data-a="back" aria-label="返回">‹</button><span class="ad-aff" title="好感度">♡ <i>0</i></span><span class="sp"></span>
-   <button class="ad-ic ad-subb" data-a="sub" aria-label="字幕开关">字幕</button><button class="ad-ic" data-a="mute" aria-label="静音">🔊</button><button class="ad-ic ad-rcb" data-a="rc">配方</button></div>
+   <button class="ad-ic ad-subb" data-a="sub" aria-label="字幕开关">字幕</button><button class="ad-ic" data-a="mute" aria-label="静音">🔊</button><button class="ad-ic ad-askb" data-a="ask">Ask Agent</button><button class="ad-ic ad-rcb" data-a="rc">配方</button></div>
   <div class="pl-rc ad-rc"></div>
   <div class="ad-mt"><div class="ad-mtr"><span class="ad-mlv"></span><div class="ad-mbar"><i></i></div><span class="ad-mn"></span></div><div class="ad-mtip">${HOVER?'狂按空格':'连点屏幕'}</div></div>
   <div class="ad-box"><div class="ad-nm"></div><div class="ad-zh"></div><div class="ad-ja"></div><button class="ad-jab" data-a="ja" title="显示日文原文">日</button></div>
@@ -128,7 +128,7 @@ async function play(id){closePlayer();
   <div class="ad-start"></div><div class="ad-end"></div><div class="ad-ach"></div><div class="ad-glow"></div></div>`;
  document.body.appendChild(o);document.body.style.overflow='hidden';requestAnimationFrame(()=>o.classList.add('on'));
  if(!HOVER)mirror(o);
- const vs=[...o.querySelectorAll('video')];P={o,vs,v:vs[0],id,aff:0,node:null,m:null,li:-1,lines:[],T:null};
+ const vs=[...o.querySelectorAll('video')];P={o,vs,v:vs[0],id,aff:0,node:null,m:null,li:-1,lines:[],T:null,brief:(STORIES||[]).find(s=>s.id===id)||null};
  vs.forEach(v=>{v.muted=LS('ol_adult_mute')==='1';
   v.addEventListener('timeupdate',e=>{if(P&&e.target===P.v)onTime()});
   v.addEventListener('ended',e=>{if(P&&e.target===P.v)(P.T?tierEnded():onEnd())});
@@ -155,6 +155,7 @@ function onClick(e){if(!P)return;const b=e.target.closest('[data-a]');
  else if(a==='sub'){P.o.classList.toggle('nosub');LS('ol_adult_nosub',P.o.classList.contains('nosub')?'1':null)}
  else if(a==='ja'){P.o.classList.toggle('ja');LS('ol_adult_ja',P.o.classList.contains('ja')?'1':null)}
  else if(a==='rc'){P.o.classList.toggle('rco')}
+ else if(a==='ask'){openAsk(askContext())}
  else if(a==='achnext'||a==='glownext'){if(P.cxNext)P.cxNext()}
  else if(a==='skip'){if(P.o.classList.contains('chs'))return;if(P.T){tierFinish();return}if(P.pre){P.v.pause();onEnd();return}P.v.pause();if(P.lines.length)showLine(P.lines.length-1);onEnd()}
  else if(a==='start'){P.o.classList.remove('st');P.aff=0;setAff(0);goNode(P.m.start||'intro')}
@@ -331,7 +332,8 @@ async function pageGen(X){if(!PTAGS)try{PTAGS=await (await fetch('adult/pose_tag
  const t=X.t,alb={name:X.en};
  // 10-10 木木夕：弹窗改成独立页面——左边分类标签页选 tag，右边（手机在上面）是预览 + 已选 + 出图 + 出过的
  const g=X.g,nm=X.nm,xl=X.xl;
- const cats=PTAGS.cats.map(c=>Object.assign({},c,{tags:c.tags.filter(x=>(x.g||g)===g)})).filter(c=>c.tags.length);
+ const cats=(PTAGS.cats||[]).map(c=>Object.assign({},c,{tags:c.tags.filter(x=>(x.g||g)===g)})).filter(c=>c.tags.length);
+ if(!cats.length){mount(`<div class="ad-hd"><button class="back" id="pgBack">${E((X.back||['‹ 返回'])[0])}</button></div><h1 class="ad-h1 ad-h1s">还没有<span>姿势库</span></h1><div class="ad-sub">本地缺少 adult/pose_tags.json。文件放回去之后，这个出图页和线上一样。</div>`,'ad3');const bk=st().querySelector('#pgBack');if(bk&&X.back)bk.onclick=X.back[1];return}
  const sel={};let cur=cats[0].id,W=[];
  mount(`<div class="ad-hd"><button class="back" id="pgBack">${E(X.back[0])}</button></div>
  <h1 class="ad-h1 ad-h1s">给 ${E(nm)} <span>出一张</span></h1><div class="ad-sub">按分类挑姿势、穿着和场景，Mari 用 ${E(nm)} 自己的画风画出来${X.oc?'，出的图会放进 '+E(nm)+' 的主页（只在成人模式下显示）':''}</div>
@@ -370,4 +372,42 @@ async function pageGen(X){if(!PTAGS)try{PTAGS=await (await fetch('adult/pose_tag
    pv.querySelector('img').src=j.work.src;pv.querySelector('.pg-pvt').textContent=`${j.work.label} · ${j.sec}s · 点图看配方`;pv.onclick=()=>box([j.work],0);hist()}
   catch(e){pv.querySelector('.pg-pvt').textContent=String(e)}
   pv.classList.remove('ld');b.textContent='再出一张';b.disabled=!picks().length}}
+
+/* ---------- Ask Agent：转发 /api/ask-agent，本地没有密钥时也能看到演示稿 ---------- */
+function askContext(){
+ const m=P&&P.m,n=P&&P.node,c=(m&&m.char)||{},sc=(m&&m.scenario)||{},b=(P&&P.brief)||{};
+ const lines=(P&&P.lines||[]).map(l=>l&&(l.zh||l.ja)).filter(Boolean).join('\n');
+ const who=[c.name_zh||c.name||b.name_zh||b.name,c.type||b.type,c.desc||c.persona].filter(Boolean).join(' · ');
+ const goal=(n&&(n.prompt||n.summary))||sc.title||sc.desc||[b.title,b.desc].filter(Boolean).join('，');
+ return {character:who,scene_goal:goal,nsfw:true,dialogue:lines,story_id:(P&&P.id)||b.id||'',node_id:(P&&P.nid)||''}}
+function mountAskFab(){
+ let b=document.getElementById('adAskFab');
+ if(!document.body.classList.contains('adult')){if(b)b.remove();if(ASK){ASK.remove();ASK=null}return}
+ if(b)return;
+ b=document.createElement('button');b.id='adAskFab';b.type='button';b.textContent='Ask Agent';
+ b.onclick=()=>openAsk(askContext());document.body.appendChild(b)}
+function renderAsk(j){
+ const beats=(j.story_beats||[]).map(x=>`<li>${E(x)}</li>`).join('')||'<li>（空）</li>';
+ const lines=(j.dialogue||[]).map(x=>typeof x==='string'?`<p>${E(x)}</p>`:`<p><b>${E(x.speaker||'')} </b>${E(x.line||x.text||'')}</p>`).join('')||'<p>（空）</p>';
+ return `<div class="ad-ask-src">${E(j.source||'')}</div><h4>节拍</h4><ol>${beats}</ol><h4>对白</h4>${lines}<h4>出图提示词</h4><pre>${E(j.image_prompt||'')}</pre><h4>负面提示词</h4><pre>${E(j.negative_prompt||'')}</pre><p class="ad-ask-notes">${E(j.notes||'')}</p>`}
+function openAsk(pre){
+ if(ASK){ASK.remove();ASK=null}
+ const ctx=Object.assign({character:'',scene_goal:'',nsfw:document.body.classList.contains('adult'),dialogue:'',story_id:'',node_id:''},pre||{});
+ const o=document.createElement('div');o.className='ad-ask';o.setAttribute('role','dialog');
+ o.innerHTML=`<form class="ad-ask-box"><div class="ad-ask-h"><b>Ask Agent</b><button type="button" data-k="x" aria-label="关闭">×</button></div>
+  <label>角色<small>character</small><textarea name="character" rows="3">${E(ctx.character)}</textarea></label>
+  <label>这一幕<small>scene_goal</small><textarea name="scene_goal" rows="2">${E(ctx.scene_goal)}</textarea></label>
+  <label class="ad-ask-ck"><input type="checkbox" name="nsfw"${ctx.nsfw?' checked':''}> NSFW</label>
+  <label>已有对白<small>可空</small><textarea name="dialogue" rows="3">${E(ctx.dialogue)}</textarea></label>
+  <button class="ad-b1" data-k="go" type="submit">Ask Agent</button><div class="ad-ask-out"></div></form>`;
+ document.body.appendChild(o);requestAnimationFrame(()=>o.classList.add('on'));ASK=o;
+ o.querySelector('[data-k=x]').onclick=()=>{o.classList.remove('on');setTimeout(()=>{o.remove();if(ASK===o)ASK=null},200)};
+ o.onsubmit=async ev=>{ev.preventDefault();const b=o.querySelector('[data-k=go]'),out=o.querySelector('.ad-ask-out');
+  b.disabled=true;b.textContent='写作中…';out.innerHTML='';
+  const body={character:o.querySelector('[name=character]').value.trim(),scene_goal:o.querySelector('[name=scene_goal]').value.trim(),nsfw:o.querySelector('[name=nsfw]').checked,dialogue:o.querySelector('[name=dialogue]').value.trim()};
+  if(ctx.story_id)body.story_id=ctx.story_id;if(ctx.node_id)body.node_id=ctx.node_id;
+  try{const r=await fetch('api/ask-agent',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const j=await r.json();
+   if(!r.ok||j.error)throw new Error(j.error||('HTTP '+r.status));out.innerHTML=renderAsk(j)}
+  catch(e){out.innerHTML=`<div class="ad-ask-err">${E(e.message||e)}</div>`}
+  b.disabled=false;b.textContent='Ask Agent'}}
 })();
