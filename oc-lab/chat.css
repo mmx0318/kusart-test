@@ -11,3 +11,4 @@
 
 /* 未解锁图库的后续图片使用模糊预览，操作入口保持清晰。 */
 .portrait-locked #portrait{filter:blur(24px);opacity:.4;pointer-events:none}.portrait-lock{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:#10111766;color:#fff;border:0;cursor:pointer;z-index:1}.portrait-lock[hidden]{display:none}.portrait-lock span{font-size:30px}.portrait-lock b{font-size:17px}.portrait-lock small{font-size:12px;color:#d0c5d2}.portrait-controls{z-index:3}
+.portrait-locked .motion-toggle{display:none}
