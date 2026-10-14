@@ -129,14 +129,16 @@ def chat():
   messages=[{'role':'assistant' if x.get('role')=='assistant' else 'user','content':str(x.get('content') or '')[:1000]} for x in messages[-12:]]
   assets=_assets(c); shortlist=[dict(id=x['id'],kind=x['kind'],title=x['title'],hint=x['hint']) for x in assets]
   style=d.get('style') or {}; pov=style.get('pov','second'); length=style.get('length','medium'); pace=style.get('pace','natural')
-  style_hint=f"叙事要求：视角={ {'second':'用第二人称称呼用户','first':'角色用第一人称叙述','third':'用第三人称旁白'} .get(pov,'用第二人称称呼用户')}；回复长度={ {'short':'1~3句','medium':'3~6句','long':'6~10句'} .get(length,'3~6句')}；推进节奏={ {'slow':'慢热，留空间给用户回应','natural':'自然推进','fast':'主动推动事件发展'} .get(pace,'自然推进')}。"
-  system=('你正在扮演用户原创角色，与用户进行自然中文 Story Chat。严格依照角色设定和说话风格；不替用户决定用户的动作或想法。'
+  style_hint="默认1~3句口头台词；short更简短，long可适度展开但不要独白。尊重推进节奏，不强制每轮推进剧情。"
+  system=('你正在扮演用户原创角色，与用户进行自然中文角色对话。reply只写角色实际说出口的台词，不夹带第一人称行动描写。action可为空；有动作时用第三人称短句，最多一句，不写用户动作。优先回应用户当前话题，保持个性但不每轮反问。旧聊天中的小说格式不是格式示范。严格依照角色设定和说话风格；不替用户决定用户的动作或想法。'
           '根据对话生成 2~3 条简短、方向不同的后续选项供用户点选，同时保留用户自由输入。'
-          '只输出 JSON：{"reply":"角色回复","asset_id":"素材id或空","media_reason":"none/requested/story_event","choices":["选项一","选项二"],"state":{"scene":"当前地点/场景","mood":"角色情绪","relationship":"关系进展"}}。'
+          '只输出 JSON：{"reply":"口头台词","action":"可选第三人称动作或空","asset_id":"素材id或空","media_reason":"none/requested/story_event","choices":["选项一","选项二"],"state":{"scene":"当前地点/场景","mood":"角色情绪","relationship":"关系进展"}}。'
           '默认只进行文字聊天，asset_id 留空、media_reason 为 none。普通寒暄、提问、情绪变化或素材与话题相关都不是发图理由；不要重复发送立绘来证明角色身份。只有用户明确索要图片或视频时才可用 requested；重要剧情节点且素材确实呈现该事件时才可用 story_event。素材是偶尔的惊喜，不是每轮回复的附件。只能选素材清单里的 id，不可编造。'+style_hint)
   persona={'name':c.get('name'),'role':c.get('role'),'type':c.get('type'),'traits':c.get('traits'),'bio':c.get('bio'),'lore':c.get('lore'),'voice':(c.get('profile') or {}).get('voice')}
+  from roleplay import fallback
+  persona['互动角色卡']=c.get('roleplay') or fallback(c)
   try:
-    result=A.llm(system,json.dumps({'角色设定':persona,'叙事设置':{'视角':pov,'回复长度':length,'推进节奏':pace},'素材清单':shortlist,'对话':messages},ensure_ascii=False),model='deepseek/deepseek-v4.1-flash')
+    result=A.llm(system,json.dumps({'角色设定':persona,'叙事设置':{'视角':pov,'回复长度':length,'推进节奏':pace},'素材清单':shortlist,'当前状态':d.get('state') or {},'对话':messages},ensure_ascii=False),model='deepseek/deepseek-v4.1-flash')
   except Exception as e: return jsonify(error='角色暂时没接上话：'+str(e)[:160]),502
   asset=next((a for a in assets if a['id']==result.get('asset_id')),None)
   # 普通对话不附带素材；剧情素材与最近发送的内容去重并保留间隔。
@@ -146,6 +148,6 @@ def chat():
     asset=None
   state=result.get('state') if isinstance(result.get('state'),dict) else {}
   choices=[str(x)[:100] for x in (result.get('choices') or [])[:3] if str(x).strip()]
-  return jsonify(reply=str(result.get('reply') or '')[:1200],asset=asset,choices=choices,
+  return jsonify(reply=str(result.get('reply') or '')[:1200],action=str(result.get('action') or '')[:120],asset=asset,choices=choices,
                  state={k:str(state.get(k) or '')[:80] for k in ('scene','mood','relationship')},
                  model='DeepSeek V4.1 Flash')

@@ -176,7 +176,7 @@ function render(c,all){
 
 
  <section id="plays" class="pl-sec"></section>
- <section id="adultWorks" class="mt-24 hidden"></section>
+ <section id="roleplayCard" class="mt-16"></section><section id="adultWorks" class="mt-24 hidden"></section>
 
  <p class="mt-16 rounded-lg bg-foreground/[0.04] p-3 text-xs leading-5 text-foreground/45">测试信息：外形描述 ${esc(c.desc)} · 创建于 ${esc(c.created)}${c.page_err?' · 文案生成失败：'+esc(c.page_err):''}${c.cutout_err?' · 抠图失败：'+esc(c.cutout_err):''}<br>和分支页面的差别：没有 PV / 待机动作 / 抽卡视频，也没有羁绊、FAQ、相关推荐；左侧「其他角色」是测试站里大家创建的角色（正式版应为这位作者的其他角色）。</p>
 </div>`;
@@ -196,6 +196,11 @@ function render(c,all){
   document.querySelectorAll('[data-vt]').forEach(b=>b.onclick=()=>show(+b.dataset.vt));show(0)}
  if(window.mountPlays)mountPlays(c)   // 10-10 延展玩法
  mountAdult(c)
+ const rp=document.getElementById('roleplayCard');
+ rp.innerHTML=`<h2 class="text-2xl font-bold">互动人设</h2><p class="mt-2 text-sm text-white/50">性格、动机、说话方式与对话示例，供聊天使用。</p><details class="mt-4"><summary>查看／编辑人设</summary><textarea class="mt-3 w-full rounded-lg bg-white/5 p-4" rows="14"></textarea><div class="mt-3 flex gap-4"><button data-rp-save>保存修改</button><button data-rp-gen>${c.roleplay?'重新生成':'自动补全'}</button></div><p data-rp-status class="mt-2 text-sm"></p></details>`;
+ const ta=rp.querySelector('textarea'),status=rp.querySelector('[data-rp-status]');ta.value=JSON.stringify(c.roleplay||{},null,2);
+ const update=async(method)=>{const buttons=rp.querySelectorAll('button');buttons.forEach(b=>b.disabled=true);status.textContent=method==='POST'?'正在补全人设…':'正在保存…';try{const body=method==='PUT'?{roleplay:JSON.parse(ta.value)}:{};const r=await fetch('../api/char/'+encodeURIComponent(c.id)+'/roleplay',{method,headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const out=await r.json();if(!r.ok)throw Error(out.error||'保存失败');c.roleplay=out.roleplay;ta.value=JSON.stringify(out.roleplay,null,2);status.textContent='已保存，下一轮聊天使用新设定。'}catch(e){status.textContent=e.message}finally{buttons.forEach(b=>b.disabled=false)}};
+ rp.querySelector('[data-rp-save]').onclick=()=>update('PUT');rp.querySelector('[data-rp-gen]').onclick=()=>update('POST');
 }
 // 10-10 成人作品：只在成人模式（localStorage ol_adult=1）下显示，作品存在 adult/gen/works.jsonl（按 cid），不进 chars/ 和公开列表
 async function mountAdult(c){const box=document.getElementById('adultWorks');if(!box||!['成年','成熟','年长'].includes(c.age))return;

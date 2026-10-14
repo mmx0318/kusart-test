@@ -422,9 +422,12 @@ def api_save():
   c=request.json; c['id']=hashlib.md5(f"{time.time()}{c.get('name')}".encode()).hexdigest()[:10]; c['created']=time.strftime('%Y-%m-%d %H:%M')
   c['style_name']=sname(c.get('style')) or '保持原图画风'
   build_page(c)
+  from roleplay import generate
+  try: c['roleplay']=generate(c,llm)
+  except Exception as e: c['roleplay_err']=str(e)[:160]
   json.dump(c,open(os.path.join(HERE,'chars',c['id']+'.json'),'w'),ensure_ascii=False,indent=1)
   vo=(c.get('profile') or {}).get('voice') or []   # 10-09 木木夕：登场气泡用按性格写的「初次见面」台词
-  hello=next((v.get('line') for v in vo if '初次' in (v.get('context') or '')),None) or (vo[0].get('line') if vo else '')
+  hello=(c.get('roleplay') or {}).get('first_mes') or next((v.get('line') for v in vo if '初次' in (v.get('context') or '')),None) or (vo[0].get('line') if vo else '')
   return jsonify(id=c['id'],url='c/'+c['id'],hello=hello)
 @app.get('/api/chars')
 def api_chars():
@@ -473,6 +476,21 @@ REWRITE={'summary':'"epithet":"称号，格式「世界观 · 职业」","summar
  'dossier':'"dossier":[{"label":"喜欢","value":"…"},{"label":"讨厌","value":"…"},{"label":"习惯","value":"…"},{"label":"秘密","value":"…"}]',
  'files':'"files":[{"title":"档案故事标题 2~6 字","body":"80~140 字的小片段"}]（3 篇）',
  'signatures':'"signatures":[{"title":"辨识特征名 4~8 字","body":"具体描述 20~40 字"}]（4 条，只写立绘里看得见的外形）'}
+@app.route('/api/char/<cid>/roleplay',methods=['POST','PUT'])
+def roleplay_card(cid):
+  p=os.path.join(HERE,'chars',os.path.basename(cid)+'.json')
+  if not os.path.exists(p): abort(404)
+  c=json.load(open(p))
+  if request.method=='PUT':
+    card=(request.json or {}).get('roleplay')
+    if not isinstance(card,dict): return jsonify(error='角色卡必须为对象'),400
+  else:
+    from roleplay import generate
+    card=generate(c,llm)
+  c['roleplay']=card
+  json.dump(c,open(p,'w'),ensure_ascii=False,indent=1)
+  return jsonify(roleplay=card)
+
 @app.post('/api/char/<cid>/rewrite')
 def api_char_rewrite(cid):
   p=os.path.join(HERE,'chars',os.path.basename(cid)+'.json')

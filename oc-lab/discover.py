@@ -46,5 +46,5 @@ def characters():
         greeting=next((v.get('line') for v in voice if '初次' in v.get('context','')),None)
         cut=(c.get('cutout') or {}).get('src')
         images=list(dict.fromkeys([s for s in [cut,c.get('img'),*(c.get('images') or []),*[w.get('src') for w in c.get('works') or [] if w.get('kind')!='pv']] if isinstance(s,str) and s]))
-        rows.append(dict(adult_only=bool(c.get('adult_album_type')),id=cid,name=c.get('name') or '未命名',img=c.get('img'),cutout=cut,category=category,type=kind,role=c.get('role') or '',summary=p.get('summary') or c.get('bio') or '',greeting=greeting or '',accent=p.get('accent') or '#ef6595',images=images,nsfw_cover=nsfw,works=len(c.get('works') or [])))
+        rows.append(dict(adult_only=bool(c.get('adult_album_type')),id=cid,name=c.get('name') or '未命名',img=c.get('img'),cutout=cut,category=category,type=kind,role=c.get('role') or '',summary=p.get('summary') or c.get('bio') or '',greeting=(c.get('roleplay') or {}).get('first_mes') or greeting or '',accent=p.get('accent') or '#ef6595',images=images,nsfw_cover=nsfw,works=len(c.get('works') or [])))
     return jsonify(characters=rows)
