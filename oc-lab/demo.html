@@ -1,0 +1,11 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>剧情与聊天 Demo · OC Lab</title><link rel="stylesheet" href="demo.css"><meta name="theme-color" content="#171923"></head>
+<body><header><a href="./" class="back">← 返回创建角色</a><div><b>OC Lab</b><span>剧情与聊天实验室</span></div><span class="demo-tag">内部 Demo</span></header>
+<main><nav class="tabs"><button class="active" data-tab="story">剧情工作台</button><button data-tab="chat">角色聊天</button></nav>
+<section id="storyPane" class="pane active"><div class="intro"><p class="eyebrow">INTERACTIVE STORY</p><h1>让角色的故事<br><em>可以亲自走进去</em></h1><p>选一个已有角色，写下故事想法，生成分支、匹配素材，然后直接试玩。</p></div>
+<div class="formrow"><label>选择角色<select id="storyChar"></select></label><label class="wide">故事想法<input id="brief" maxlength="1200" placeholder="例：雨夜里，TA在便利店遇见多年未见的朋友……"></label><button id="generate" class="primary">生成剧情树</button></div>
+<div id="storyStatus" class="status"></div><div id="editor" class="editor hidden"><div class="editorhead"><div><span class="eyebrow">STORY BUILDER</span><h2 id="storyTitle"></h2><p id="storySynopsis"></p></div><div class="actions"><button id="saveStory" class="primary">保存剧情</button><button id="playStory">试玩</button></div></div><div id="nodes" class="nodes"></div></div>
+<div class="saved"><h2>已保存的剧情</h2><div id="savedStories" class="savedlist">加载中…</div></div><div id="player" class="player hidden"></div></section>
+<section id="chatPane" class="pane"><div class="chatsetup"><div class="intro"><p class="eyebrow">CHARACTER CHAT</p><h1>和 TA 聊一会儿</h1><p>角色会按对话情境，从自己的角色作品中挑选立绘、图片或视频发给你。</p></div><label>选择角色<select id="chatChar"></select></label></div><div class="chatbox"><div id="chatLog" class="chatlog"><div class="empty">选好角色，发出第一句话吧。</div></div><form id="chatForm"><input id="chatInput" maxlength="1000" placeholder="说点什么……" autocomplete="off"><button class="primary">发送</button></form></div></section>
+</main><script src="demo.js"></script></body></html>
