@@ -108,7 +108,7 @@ function render(c,all){
  // 10-10 木木夕：「成人模式」按钮 → 用这个角色进成人插画生成页；🔴只给成年人设（年龄感 成年/成熟/年长，且不是少女/少年/萝莉/正太/甜妹/奶系）
  const adMW=([c.name,c.bio,c.desc,c.role].join(' ').match(/少女|少年|萝莉|正太|小女孩|小男孩|幼|童|学生|初中|高中|JK|DK|小学|未成年/)||[])[0];   // 同 adult.py MINOR_W；立绘年龄检查在后端进页面时做
  const adOK=!adMW&&['成年','成熟','年长'].includes(c.age)&&!['少女','少年','少男','萝莉','正太','甜妹','奶系'].includes(c.type);
- const ADB=h=>adOK?`<a href="../?adult_oc=${encodeURIComponent(c.id)}" class="adbtn ${h}" aria-label="成人模式（仅限18岁以上）" title="成人模式（18岁以上）">🔞</a>`:`<span class="adbtn off ${h}" role="img" aria-label="成人模式不可用：只有明确成年的角色可以进入" title="只有成年人设能进成人模式">🔞</span>`;
+ const ADB=h=>adOK?`<a href="#adultWorks" class="adbtn ${h}" aria-label="成人模式（仅限18岁以上）" title="成人模式（18岁以上）">🔞</a>`:`<span class="adbtn off ${h}" role="img" aria-label="成人模式不可用：只有明确成年的角色可以进入" title="只有成年人设能进成人模式">🔞</span>`;
  const ADT=adOK?'':`<p class="mt-2 text-xs text-white/40">成人模式只对明确成年的角色开放（${adMW?`设定里写着「${esc(adMW)}」`:`${esc(name)} 的年龄感是「${esc(c.age||'未填')}」`}）</p>`;
  const voice=(p.voice||[]);
  document.getElementById('root').innerHTML=`
@@ -198,12 +198,17 @@ function render(c,all){
  mountAdult(c)
 }
 // 10-10 成人作品：只在成人模式（localStorage ol_adult=1）下显示，作品存在 adult/gen/works.jsonl（按 cid），不进 chars/ 和公开列表
-async function mountAdult(c){const box=document.getElementById('adultWorks');if(!box||localStorage.getItem('ol_adult')!=='1')return;
+async function mountAdult(c){const box=document.getElementById('adultWorks');if(!box||!['成年','成熟','年长'].includes(c.age))return;
+ box.classList.remove('hidden');
+ const unlocked=localStorage.getItem('oc-premium-'+c.id)==='1';
+ if(!unlocked){box.innerHTML=`<h2 class="text-3xl font-bold">${esc(c.name)} 的专属内容</h2><p class="mt-2 text-sm text-white/50">🔞 专属图库与互动玩法 · 解锁后开启</p><div class="mt-6 grid gap-4 md:grid-cols-2">${['专属图库','互动玩法'].map(t=>`<button data-premium class="rounded-xl border border-white/15 bg-white/5 p-8 text-left"><span class="text-3xl">🔒</span><h3 class="mt-4 text-xl font-bold">${t}</h3><p class="mt-2 text-sm text-white/50">解锁 ${esc(c.name)} 的专属内容 →</p></button>`).join('')}</div>`;box.querySelectorAll('[data-premium]').forEach(b=>b.onclick=()=>{const dialog=document.createElement('dialog');dialog.style.cssText='background:#1c1822;color:white;border:1px solid #ffffff25;border-radius:24px;padding:28px;width:min(90vw,420px)';dialog.innerHTML=`<h2 style="font-size:24px;font-weight:bold">解锁 ${esc(c.name)}</h2><p style="margin:16px 0;color:#bbb">包含已有专属图片、视频和互动玩法。按角色解锁，当前浏览器记住状态。</p><p style="color:#ef88ac">Demo 演示，不会扣款；正式价格待定。</p><label style="display:block;margin:18px 0"><input type="checkbox"> 我已满 18 岁</label><button data-unlock disabled style="background:#d81b60;border-radius:24px;padding:12px 20px">模拟解锁</button> <button data-close>暂不开启</button>`;document.body.append(dialog);dialog.querySelector('input').onchange=e=>dialog.querySelector('[data-unlock]').disabled=!e.target.checked;dialog.querySelector('[data-close]').onclick=()=>{dialog.close();dialog.remove()};dialog.querySelector('[data-unlock]').onclick=()=>{localStorage.setItem('oc-premium-'+c.id,'1');dialog.close();dialog.remove();mountAdult(c)};dialog.showModal()});return;}
+
  let w=[];try{w=(await fetch('../adult/gen/list?cid='+encodeURIComponent(c.id),{cache:'no-store'}).then(r=>r.json())).works||[]}catch(e){}
  let vv=[];try{vv=(await fetch('../adult/vid/list?cid='+encodeURIComponent(c.id),{cache:'no-store'}).then(r=>r.json())).videos||[]}catch(e){}   // 10-11 做成视频
+ if(c.adult_album_type)w=(c.images||[]).map((src,i)=>({src,thumb:src,label:'角色图库 '+(i+1)})).concat(w);
  box.classList.remove('hidden');
- box.innerHTML=`<p class="font-mono text-[11px] uppercase tracking-[0.22em] text-foreground/45">Adult · 成人作品</p><div class="mt-3 flex flex-wrap items-end justify-between gap-3"><h2 class="font-space text-3xl font-bold">${esc(c.name)} 的成人插画</h2>
-  <a href="../?adult_oc=${encodeURIComponent(c.id)}" class="text-sm text-[#d81b60] hover:underline">继续出图 ›</a></div><p class="mt-1 text-xs text-foreground/45">只在成人模式下显示 · ${w.length} 张${vv.length?` · ${vv.length} 段视频`:''} · 点开图片可以「做成视频」</p>
+ box.innerHTML=`<p class="font-mono text-[11px] uppercase tracking-[0.22em] text-foreground/45">Premium · 已解锁</p><div class="mt-3 flex flex-wrap items-end justify-between gap-3"><h2 class="font-space text-3xl font-bold">${esc(c.name)} 的成人插画</h2>
+  <a href="${c.adult_album_type?'../create?adult_type='+encodeURIComponent(c.adult_album_type):'../create?adult_oc='+encodeURIComponent(c.id)}" class="text-sm text-[#d81b60] hover:underline">进入互动玩法 ›</a></div><p class="mt-1 text-xs text-foreground/45">专属图库 · ${w.length} 张${vv.length?` · ${vv.length} 段视频`:''} · 点开图片可以「做成视频」</p>
   ${vv.length?`<div class="mt-6 grid grid-cols-2 gap-3 md:grid-cols-4">${vv.map(x=>`<figure><video src="../${esc(x.src)}" poster="../${esc(x.poster)}" controls playsinline preload="none" loop class="aspect-[3/4] w-full rounded-lg bg-black object-cover"></video><figcaption class="mt-1 truncate text-[11px] text-foreground/50">${esc(x.kind_name)} · ${x.sec}秒</figcaption></figure>`).join('')}</div>`:''}
   ${w.length?`<div class="mt-6 grid grid-cols-3 gap-3 md:grid-cols-5">${w.map((x,i)=>`<figure data-aw="${i}" class="cursor-zoom-in"><img src="../${esc(x.thumb)}" class="aspect-[3/4] w-full rounded-lg object-cover object-top ring-1 ring-foreground/10"><figcaption class="mt-1 truncate text-[11px] text-foreground/50">${esc(x.label)}</figcaption></figure>`).join('')}</div>`
    :`<p class="mt-6 text-sm text-foreground/50">还没有成人插画，点「继续出图」挑姿势和场景出第一张。</p>`}`;
