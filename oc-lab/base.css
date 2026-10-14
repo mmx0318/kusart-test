@@ -558,3 +558,6 @@ body:not(.notes) .sc .stl{display:none}
  .mine-card{border-radius:9px;margin-bottom:5px}
  .mine-name{padding:34px 10px 10px;font-size:13px}
 }
+
+/* 首页主入口：创建角色与模板库并列，首屏可见。 */
+.home-entry{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:0 auto 24px;width:100%;max-width:760px}.home-entry>span,.home-entry>a{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:72px;border:1px solid var(--border);border-radius:16px;background:white;color:var(--fg);text-decoration:none;font-size:18px;font-weight:700}.home-entry>span{background:var(--tonal);border-color:#efafc9;color:var(--tonal-fg)}.home-entry small{font-size:12px;font-weight:400;color:var(--muted);margin-top:4px}.home-entry>a:hover{border-color:var(--primary);background:#fff5f8}@media(max-width:959px){.home-entry{gap:10px;margin-bottom:18px}.home-entry>span,.home-entry>a{min-height:67px;font-size:16px}.home-entry small{font-size:11px}}

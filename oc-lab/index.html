@@ -3,7 +3,7 @@
 <title>KusArt · 创建角色 测试站</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@chinese-fonts/xiaolai@3.0.0/dist/Xiaolai/result.css">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&family=Shantell+Sans:wght@500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="base.css?v=1014gallery-large">
+<link rel="stylesheet" href="base.css?v=1014home-entry">
 <link rel="stylesheet" href="plays.css?v=1010y"><link rel="stylesheet" href="adult.css?v=1011m"><meta name="theme-color" content="#F8F7F7">
 </head><body>
 <div class="top"><img class="logo" src="a/logo.png" alt="KusArt"><span class="tag">真实测试 v0.6</span><span class="sp"></span><span class="cr" id="spent">✦ 本次已用 0</span>
@@ -37,10 +37,10 @@ function busy(cap,sub){st.innerHTML=`<div class="loading fade"><img src="a/RING.
 function fail(e,back){st.innerHTML=`<div class="fade" style="flex:1;display:flex;flex-direction:column;justify-content:center"><div class="err">出错了：${esc(e.message||e)}</div><button class="btn2" onclick="go(${back})">返回上一步</button></div>`}
 
 /* 1 类型 */
-R[0]=()=>head(0)+`${H("你想创建一个","什么样","的角色")}<div class="sub">先选一个大方向，后面都能改</div>
+R[0]=()=>head(0)+`<nav class="home-entry" aria-label="首页功能"><span aria-current="page">创建角色</span><a href="templates">模板库 <small>选款式，用角色做作品 →</small></a></nav>${H("你想创建一个","什么样","的角色")}<div class="sub">先选一个大方向，后面都能改</div>
 <div class="tsel">${[['少女','',1],['御姐','',2],['假小子','',8],['少年','',4],['熟男','',5],['男娘','',9],['Furry','',6]].map(o=>`<div class="tp" data-v="${o[0]}"><div class="tpanel"><img class="bust bsh" src="a/v8bust_${o[2]}.webp?v=p3" alt=""><img class="full fsh" src="a/v8cut_${o[2]}.webp?v=p3" alt=""><img class="bust" src="a/v8bust_${o[2]}.webp?v=p3" alt=""><img class="full" style="${o[3]||''}" src="a/v8cut_${o[2]}.webp?v=p3" alt="${TN(o[0])}"></div><div class="tlab"><i></i><b>${TN(o[0])}</b>${o[1]?`<small>${o[1]}</small>`:""}</div></div>`).join('')+`<div class="tp tpc" id="cus"><div class="tpanel"><div class="tpplus">＋</div></div><div class="tlab"><i></i><b>自定义</b><small>选性别 / 年龄 / 物种</small></div></div>`}</div>
 <div class="cta ctaalt"><div class="alt"><div class="ghost" id="up">上传已有角色图<small>已有角色立绘 · 免费</small></div><div class="ghost" id="rnd">随便来一个<small>从角色库挑 4 个 · 免费</small></div></div></div>
-<div style="text-align:center;margin-top:18px"><a href="templates" style="color:var(--primary);font-weight:700;text-decoration:none">用角色做作品 →</a></div><div id="mineBox"></div>`+note('真实测试版：描述、设定、主页文案由 Kimi K2.6 现写；候选图由 prod Kusa-Anima 真出（生图加速 + 画风增强，一次 4 张）。10-08 实测询价：开加速 15 积分/张，不开 40；画风增强不加价 → 4 张 = 60。出图走木木夕的 prod 账号。<br>上传图：用 Gemini 2.5 Flash 读出外形和类型，然后跳过「描述」。随便来一个：AI 随机写描述，默认 Q 萌画风，直接出 4 张。');
+<div id="mineBox"></div>`+note('真实测试版：描述、设定、主页文案由 Kimi K2.6 现写；候选图由 prod Kusa-Anima 真出（生图加速 + 画风增强，一次 4 张）。10-08 实测询价：开加速 15 积分/张，不开 40；画风增强不加价 → 4 张 = 60。出图走木木夕的 prod 账号。<br>上传图：用 Gemini 2.5 Flash 读出外形和类型，然后跳过「描述」。随便来一个：AI 随机写描述，默认 Q 萌画风，直接出 4 张。');
 B[0]=()=>{$$('.tp[data-v]').forEach(b=>b.onclick=()=>{S.type=b.dataset.v;S.custom=null;S.cusPick=null;S.cusHint='';if(S.customExtra){S.extra='';S.customExtra=false}S.upload=null;$('.tsel').classList.add('picked');b.classList.add('sel');setTimeout(()=>go(2),320)});
  $('#up').onclick=async()=>{const f=await pickFile();if(!f)return;busy('正在读你的角色','看发色、服装和特征…');
    try{const j=await upload(f);S.upload=j.url;S.desc=j.desc;S.type=j.type||'少女';   // 10-09 木木夕：上传已有角色图 → 直接进补充设定（不再选画风/出图）
