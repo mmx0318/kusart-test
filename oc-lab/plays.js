@@ -14,7 +14,7 @@ let C=null,CID=null;
 window.mountPlays=c=>{C=c;CID=c.id;const box=document.getElementById('plays');if(!box)return;const n=E(c.name);
  const ssr='https://kusart.com/Oc-generator/oc-prompt-%20picture/Halloween_costume/Pumpkin%20Witch.webp';
  box.innerHTML=`<h2 class="pl-h">和 ${n} 一起玩</h2><p class="pl-sub">抽卡都免费，喜欢再生成</p>
- <div class="pl-cards">
+ <a class="pl-btn" style="display:inline-flex;margin:10px 0 22px;text-decoration:none" href="../templates?cid=${encodeURIComponent(CID)}">用 ${n} 创作 · 打开模板库 ↗</a><div class="pl-cards">
   <button class="pl-card" data-pl="outfit"><span class="pl-free">抽卡免费</span><div class="pl-ico"><i class="pl-mini" style="background-image:url(${U('tags_v3/少女/big/穿着_水手服.webp')})"></i><i class="pl-mini ssr" style="background-image:url('${ssr}')"></i><i class="pl-mini" style="background-image:url(${U('tags_v3/御姐/big/穿着_大衣.webp')})"></i></div><b>服装抽卡机</b><p>抽一套衣服给 ${n} 换上，万圣节、圣诞限定是 SSR</p></button>
   <button class="pl-card" data-pl="fortune"><span class="pl-free">抽签免费</span><div class="pl-ico"><div class="pl-kw"><span>小确幸</span><span>好运</span><span>摸鱼</span></div></div><b>运势表情包</b><p>抽今天的三个运势关键词，${n} 用表情包告诉你今天怎么样</p></button>
   <button class="pl-card" data-pl="pv"><div class="pl-ico"><div class="pl-play" style="background-image:url(${U((c.cutout||{}).src||c.img)});background-size:contain;background-repeat:no-repeat;background-position:center;background-color:#15161b"></div></div><b>出场 PV</b><p>按 ${n} 的设定，生成一条 15 秒的游戏式登场动画</p></button>
@@ -27,7 +27,7 @@ window.mountPlays=c=>{C=c;CID=c.id;const box=document.getElementById('plays');if
 function drawWorks(){const w=document.getElementById('plWorks');if(!w)return;const ws=C.works||[];
  if(!ws.length){w.innerHTML='';return}
  const T={outfit:'换装',meme:'表情包',fsign:'运势签',pv:'PV'};
- w.innerHTML=`<h3>${E(C.name)} 的作品 · ${ws.length}</h3><div class="pl-wgrid">${ws.map((x,i)=>`<div class="pl-w ${x.kind}" data-w="${i}">${x.kind==='pv'?`<video src="${U(x.src)}" muted playsinline loop preload="metadata"></video>`:`<img src="${U(x.src)}" loading="lazy">`}<i>${T[x.kind]||''}${x.rarity==='SSR'?' · SSR':''}</i></div>`).join('')}</div>`;
+ w.innerHTML=`<h3>${E(C.name)} 的作品 · ${ws.length}</h3><div class="pl-wgrid">${ws.map((x,i)=>`<div class="pl-w ${x.kind}" data-w="${i}">${x.kind==='pv'?`<video src="${U(x.src)}" muted playsinline loop preload="metadata"></video>`:`<img src="${U(x.src)}" loading="lazy">`}<i>${E(T[x.kind]||x.title||'')}${x.rarity==='SSR'?' · SSR':''}</i></div>`).join('')}</div>`;
  w.querySelectorAll('[data-w]').forEach(d=>{const x=ws[+d.dataset.w];const v=d.querySelector('video');if(v){d.onmouseenter=()=>v.play();d.onmouseleave=()=>v.pause()}
   d.onclick=()=>lightbox(x)})}
 function lightbox(x){const o=document.createElement('div');o.className='pl-lb';const r=x.recipe;   // 10-10 木木夕：每个作品带「创作配方」（角色 / 模型 / 风格 / 提示词 / 素材），之后别人可以照着复用
@@ -35,7 +35,8 @@ function lightbox(x){const o=document.createElement('div');o.className='pl-lb';c
  const row=(k,v)=>v?`<div class="rr"><b>${k}</b><span>${v}</span></div>`:'';
  const im=s=>s?`<a href="${E(U(s))}" target="_blank"><img src="${E(U(s))}"></a>`:'';
  const P=r&&r.params||{},card=P.card||{};
- const rec=r?`<div class="pl-rc"><h4>创作配方${r.backfill?' <em>补录</em>':''}</h4>
+ const reuse=r&&['template','outfit','fortune','pv'].includes(r.play)?`<a class="pl-btn" style="display:block;text-decoration:none;text-align:center" href="../templates?cid=${encodeURIComponent(CID)}&source_cid=${encodeURIComponent(CID)}&source_src=${encodeURIComponent(x.src)}">重新生成 / 换角色做同款 ↗</a>`:'';
+ const rec=r?`<div class="pl-rc">${reuse}<h4>创作配方${r.backfill?' <em>补录</em>':''}</h4>
   ${row('玩法',E(r.play_name))}${row('角色',E((r.character||{}).name)+((r.character||{}).type?` · ${E(r.character.type)}`:''))}${row('画风',E((r.character||{}).style_name||'—'))}
   ${row('模型',E((r.model||{}).name)+((r.model||{}).size?` · ${E(r.model.size)}`:'')+((r.model||{}).resolution?` · ${E(r.model.resolution)} ${E(r.model.duration)}s`:''))}
   ${row('模版',E(r.template||(P.template&&P.template.id)||''))}${row('卡片',card.name?E(`${card.rarity||''} ${card.name}`):'')}

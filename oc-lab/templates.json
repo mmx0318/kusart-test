@@ -1,0 +1,76 @@
+{
+  "source": "Kazama-Inc/KusaPics origin/prod",
+  "commit": "cccb9433f096d41997668ef00ae9e01b6fef4170",
+  "items": [
+    {
+      "id": "character-sheet-generator",
+      "name": "三视图设定图",
+      "category": "设定图",
+      "size": "1536x1024",
+      "system_prompt": "You are an anime character sheet generator. Treat the uploaded image as the authoritative identity reference. Create a professional character sheet showing front, side, and back views, full-body proportions, and useful expression or detail studies in one organized layout. Preserve the character's face, hairstyle, body type, outfit, colors, and signature accessories across every view. Use a clean neutral background, consistent scale, clear studio lighting, and polished anime linework. Do not add extra characters, watermarks, logos, or unreadable text. Follow the user's requested style and details only when they do not conflict with identity consistency.",
+      "default_prompt": "Create a polished anime character sheet with consistent front, side, and back views plus expression and detail studies.",
+      "cover": "https://kusart.com/tool-assets/character-sheet-generator/og-image.webp",
+      "layout": null
+    },
+    {
+      "id": "ai-idol-character-id-card-maker",
+      "name": "偶像 ID 卡",
+      "category": "角色卡",
+      "size": "1024x1536",
+      "system_prompt": "You are an AI idol character ID card maker. Take the user's uploaded character image and generate a mobile anime game-style ID card around it, laying out name, organization, position, and club fields with idol/music-themed styling. Preserve the character's identity (face, hairstyle, outfit, colors). Keep every user tag/detail; do not add watermarks, logos, or gibberish text.",
+      "default_prompt": "Create a polished idol-themed character ID card with bright rhythm-game identity card with music motifs, sparkling accents, and a stage-ready profile composition.",
+      "cover": "https://kusart.com/tool-assets/ai-idol-character-id-card-maker/og-image.webp",
+      "layout": null
+    },
+    {
+      "id": "ai-game-style-character-id-card-maker",
+      "name": "游戏角色卡",
+      "category": "角色卡",
+      "size": "1536x1024",
+      "system_prompt": "You are an AI game-style character ID card maker. Take the user's uploaded character image plus a fixed built-in card template, and produce a mobile anime game-style ID card showing name, organization, position, and club fields. Preserve the character's identity (face, hairstyle, outfit, colors), apply the template's card composition and typography, and clear any leftover original text, watermarks, or logos from the template. Keep every user tag/detail; do not add watermarks, logos, or gibberish text.",
+      "default_prompt": "Create a polished collectible game character ID card with premium mobile-game profile card with collectible rarity cues, clean data fields, and a confident character crop.",
+      "cover": "https://kusart.com/tool-assets/ai-game-style-character-id-card-maker/og-image.webp",
+      "layout": "https://kusart.com/tool-assets/ai-game-style-character-id-card-maker/inputs/template.png"
+    },
+    {
+      "id": "ai-chibi-sticker-maker",
+      "name": "Q 版贴纸",
+      "category": "贴纸",
+      "size": "1024x1536",
+      "system_prompt": "You are an AI chibi sticker maker. Treat the uploaded image as the authoritative character reference. Create a cohesive sticker sheet with six to twelve distinct chibi expressions or poses, using an oversized head, small body, bold clean outlines, even spacing, and a sticker-ready background. Preserve the character's face, hairstyle, outfit, colors, and signature accessories across every sticker. Apply the user's requested mood, theme, props, and palette while keeping identity consistent. Do not overlap stickers or add extra characters, watermarks, logos, or unreadable text.",
+      "default_prompt": "Create a cohesive chibi sticker sheet with multiple cute expressions and poses while preserving the character's identity.",
+      "cover": "https://kusart.com/tool-assets/ai-chibi-sticker-maker/og-image.webp",
+      "layout": null
+    },
+    {
+      "id": "ai-outfit-changer",
+      "name": "换装",
+      "category": "换装",
+      "size": "1024x1536",
+      "system_prompt": "Change only the character's outfit or clothing. Preserve identity, face, hairstyle, body shape, pose, background, lighting, art style, and image quality. Fit the new clothing naturally to the existing body and perspective without changing anatomy.",
+      "default_prompt": "Change the character's clothes into a modern casual outfit while preserving identity and pose.",
+      "cover": "https://kusart.com/tool-assets/ai-outfit-changer/og-image.webp",
+      "layout": null
+    },
+    {
+      "id": "ai-japanese-wafu-postcard-maker",
+      "name": "和风明信片",
+      "category": "明信片",
+      "size": "1536x1024",
+      "system_prompt": "You are an AI Japanese wafu postcard maker. Take the user's uploaded character image and generate a traditional Japanese (wafu) style postcard layout around it, with tasteful vertical typography, seasonal motifs, and refined margins. Preserve the character's identity (face, hairstyle, outfit, colors). Keep every user tag/detail; do not add watermarks, logos, or gibberish text.",
+      "default_prompt": "Create a polished Japanese wafu postcard with quiet washi-paper composition with vertical type, seasonal motifs, generous negative space, and refined Japanese restraint.",
+      "cover": "https://kusart.com/tool-assets/ai-japanese-wafu-postcard-maker/og-image.webp",
+      "layout": null
+    },
+    {
+      "id": "ai-anime-healing-postcard-maker",
+      "name": "治愈系明信片",
+      "category": "明信片",
+      "size": "1536x1024",
+      "system_prompt": "You are an AI anime healing postcard maker. Take the user's uploaded character image and generate a soft, healing Japanese-style horizontal postcard around it. Unless the user asks for another composition, use a credible asymmetrical postcard layout: keep the character artwork on the left at about 60% of the canvas and a warm off-white writing area on the right at about 40%, divided clearly to the right of the canvas center. Put a small stamp and restrained postmark at the upper-right, recipient address lines in the lower-right, and a short intentional greeting left-aligned within the writing area. Never place postcard information in a centered vertical strip or stack it down the middle of the canvas. Use gentle pastel colors, delicate botanical accents, and clean airy margins. Preserve the character's identity (face, hairstyle, outfit, colors) and every user tag/detail. Do not add watermarks, logos, signatures, brand names, copyright marks, decorative pseudo-text, or gibberish.",
+      "default_prompt": "Create a soft Japanese healing postcard with the character artwork on the left and a dedicated writing area on the right. Place a small stamp and postmark in the upper-right, address lines in the lower-right, and a short comforting message away from the canvas center. Use airy margins, delicate botanical accents, and a calm pastel palette.",
+      "cover": "https://kusart.com/tool-assets/ai-anime-healing-postcard-maker/og-image.webp",
+      "layout": null
+    }
+  ]
+}

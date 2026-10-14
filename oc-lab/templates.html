@@ -1,0 +1,11 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>角色模板库 · OC Lab</title><link rel="stylesheet" href="templates.css?v=1014templates"></head><body>
+<header><a href="./">‹ 创建角色</a><strong>角色模板库</strong><a id="characterHome" href="./">角色主页 ↗</a></header>
+<main><div class="intro"><p>用你的角色，做新的作品</p><h1>选好角色，接下来交给模板。</h1></div>
+<div class="character-panel"><label for="character">这次用谁创作？</label><select id="character"></select><img id="characterArt" alt="当前角色"><div><strong id="characterName"></strong><p id="referenceHint">自动带入角色立绘，无需重新上传</p></div></div>
+<nav><button class="active" data-tab="templates">模板库</button><button data-tab="works">角色作品 · 做同款</button></nav>
+<section id="templatePanel"><div class="section-head"><h2>选一个模板</h2><p>直接使用角色资料 · 缺失字段留空</p></div><div id="templateGrid" class="grid"></div></section>
+<section id="workPanel" hidden><div class="section-head"><h2>从作品开始创作</h2><select id="workFilter"><option value="mine">当前角色的作品</option><option value="all">大家的角色作品</option></select></div><div id="workGrid" class="works"></div></section>
+<p id="pageStatus" role="status"></p><section id="jobPanel" hidden><h2>作品生成中</h2><p id="jobStatus" role="status" aria-live="polite"></p><div id="jobResult"></div></section>
+</main>
+<dialog id="creator"><form method="dialog"><button class="close" aria-label="关闭">×</button></form><div id="dialogContent"></div></dialog>
+<script src="templates.js?v=1014templates"></script></body></html>

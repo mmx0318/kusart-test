@@ -4,6 +4,7 @@
 import glob,os,io,re,json,time,random,hashlib,base64,subprocess,requests
 from flask import Blueprint,request,jsonify,abort
 from PIL import Image
+from asset_store import update_character
 bp=Blueprint('plays',__name__)
 HERE=os.path.dirname(os.path.abspath(__file__))
 A=None   # app 模块（llm / POOL 等），init() 时注入
@@ -17,8 +18,7 @@ def char(cid):
   if not os.path.exists(p): abort(404)
   return p,json.load(open(p))
 def add_work(cid,w):
-  p,c=char(cid); c.setdefault('works',[]).insert(0,dict(w,created=time.strftime('%Y-%m-%d %H:%M')))
-  json.dump(c,open(p,'w'),ensure_ascii=False,indent=1)
+  update_character(cid,lambda c:c.setdefault('works',[]).insert(0,dict(w,created=time.strftime('%Y-%m-%d %H:%M'))))
 def load_bytes(src):
   if src.startswith('http'): return requests.get(src,timeout=60).content
   return open(os.path.join(HERE,src.split('?')[0]),'rb').read()
@@ -133,8 +133,9 @@ ITEM_P=('Image 1 is the character. Image 2 shows a model wearing a {cat} item: "
   'skin tone, body proportions, species features, glasses, AND the same outfit — and only add or swap in that one item ({p}), copied faithfully from Image 2 (shape, color, material). '
   'Everything else on the character stays exactly as in Image 1. Ignore the model in Image 2 (her pink hair, cat ears, tail and clothes are NOT part of this item, unless the item itself is ears/tail/wings). '
   'Keep the art style of Image 1 exactly. Full body from head to toe, standing, centered, plain white background, single character only, no text, no watermark.')
-def outfit_make(j,cid,card):
+def outfit_make(j,cid,card,reference_src=None):
   _,c=char(cid); j['phase']='换装中'
+  if reference_src: c=dict(c,cutout={'src':reference_src})
   pr=ITEM_P.format(cat=card.get('cat') or 'accessory',name=card.get('name_en') or card['name'],p=card['prompt'][:300]) if card.get('kind')=='item' else OUTFIT_P.format(p=card['prompt'][:600])
   data=gpt_edit(pr,[char_png(c),load_bytes(card['thumb'])],'1024x1536')
   fn=save_png(data,f"{cid}_outfit_{int(time.time())}",crop=True)
@@ -171,8 +172,9 @@ def fortune_draw():
   return jsonify(level=lv,keywords=kws,template=dict(id=tpl['id'],url=tpl['file_or_url'],desc=tpl['desc']),sign=sign,
                  reels={k:random.sample(sum(KW.values(),[]),8) for k in range(3)})
 MEME_P=open(os.path.join(HERE,'plays','meme_v2_prompt.txt')).read()
-def fortune_make(j,cid,tpl,lv,kws=None,sign=''):
+def fortune_make(j,cid,tpl,lv,kws=None,sign='',reference_src=None):
   _,c=char(cid); j['phase']='表情包融合中'
+  if reference_src: c=dict(c,cutout={'src':reference_src})
   tb=load_bytes(tpl['url']); w,h=Image.open(io.BytesIO(tb)).size; r=w/h
   size='1536x1024' if r>=1.25 else '1024x1536' if r<=.8 else '1024x1024'
   data=gpt_edit(MEME_P,[tb,char_png(c)],size)
@@ -209,8 +211,8 @@ def pv_params(c):
     'INTERSTITIAL_TEXT_1~3 = 三张招式/特质卡（每张 ≤16 字符，可以是能力名、口头禅、标志物）；SUBTITLE=一句副标题（≤24 字符）。'
     'ability 用中文写角色最标志的能力或气质（12~30 字），环境与特效会围绕它展开；日常系角色就写日常里的标志动作和氛围。不要出现任何真实作品、品牌和名人的名字。',
     json.dumps({k:c.get(k) for k in ('name','type','role','traits','bio','desc','lore')}|{k:p.get(k) for k in ('epithet','world','summary','hook')},ensure_ascii=False))
-def pv_make(j,cid):
-  _,c=char(cid); j['phase']='写分镜参数'; pr=pv_params(c)
+def pv_make(j,cid,params=None):
+  _,c=char(cid); j['phase']='写分镜参数'; pr=params or pv_params(c)
   txt=T04
   for k in ('CHARACTER_NAME','STATUS_TEXT_1','STATUS_TEXT_2','INTERSTITIAL_TEXT_1','INTERSTITIAL_TEXT_2','INTERSTITIAL_TEXT_3','SUBTITLE'):
     txt=txt.replace('{'+k+'}',str(pr.get(k,'')).upper().replace('"',''))

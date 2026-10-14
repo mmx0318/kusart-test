@@ -491,5 +491,6 @@ def oops(e):
 # 10-10 木木夕：角色主页延展玩法（服装抽卡 / 运势表情包 / 出场 PV）
 import sys as _sys, plays; plays.init(_sys.modules[__name__]); app.register_blueprint(plays.bp)
 import adult; adult.init(_sys.modules[__name__]); app.register_blueprint(adult.bp)   # 10-10 成人模式（类型卡 / 剧情列表 / 互动剧情播放器）
+import templates; templates.init(_sys.modules[__name__],plays); app.register_blueprint(templates.bp)
 import demo; demo.init(_sys.modules[__name__]); app.register_blueprint(demo.bp)   # demo：剧情工作台与角色聊天
 if __name__=='__main__': app.run('127.0.0.1',8791,threaded=True)
