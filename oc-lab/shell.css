@@ -8,3 +8,32 @@
 .oc-create-page #mineBox{display:none}
 
 @media(min-width:761px){.oc-shell.shell-collapsed{--shell-side:76px}.shell-collapsed .shell-sidebar{padding:18px 10px}.shell-collapsed .shell-sidebar a{padding:13px 16px}.shell-collapsed .shell-sidebar a span{display:none}.oc-chat-page.shell-expanded{--shell-side:204px}.oc-chat-page.shell-expanded .shell-sidebar{padding:22px 16px}.oc-chat-page.shell-expanded .shell-sidebar a{padding:13px 14px}.oc-chat-page.shell-expanded .shell-sidebar a span{display:block}}
+
+/* 全站共享视觉变量：页面使用同一背景、表面、文字与交互色。 */
+:root{--ui-bg:#101117;--ui-panel:#191b24;--ui-raised:#232530;--ui-line:#353744;--ui-text:#f3f1f5;--ui-muted:#aba6b4;--ui-pink:#e83e7e;--ui-pink-hover:#f05290;--ui-selected:#392332;--shell-pink:var(--ui-pink);color-scheme:dark;--background:231 18% 8%;--foreground:270 17% 95%;--card:229 18% 12%}
+body.oc-shell{background:var(--ui-bg);color:var(--ui-text);--bg:var(--ui-bg);--card:var(--ui-panel);--fg:var(--ui-text);--text:var(--ui-text);--muted:var(--ui-muted);--muted-bg:var(--ui-raised);--border:var(--ui-line);--line:var(--ui-line);--pink:var(--ui-pink);--primary:var(--ui-pink);--primary-h:var(--ui-pink-hover);--primary-a:#c72c66;--ptext:#fa92b8;--pgraph:var(--ui-pink);--tonal:var(--ui-selected);--tonal-fg:#ffa3c5;--tool:var(--ui-pink);--ink:var(--ui-text);--input:var(--ui-muted);font-family:'Noto Sans SC',system-ui,sans-serif}
+.oc-shell .shell-header,.oc-shell .shell-sidebar{background:var(--ui-panel);border-color:var(--ui-line)}
+.oc-shell .shell-sidebar a[aria-current],.oc-shell .category-strip button.active{background:var(--ui-selected);border-color:#e83e7e70;color:#ffa3c5}
+.oc-shell .shell-create,.oc-shell .primary,.oc-shell #chatSend{background:var(--ui-pink);color:#fff}
+.oc-shell .shell-create:hover,.oc-shell .primary:hover,.oc-shell #chatSend:hover{background:var(--ui-pink-hover)}
+.oc-shell dialog{background:var(--ui-panel);color:var(--ui-text);border:1px solid var(--ui-line);box-shadow:0 24px 90px #0008}
+.oc-shell dialog::backdrop{background:#08090dbb;backdrop-filter:blur(5px)}
+.oc-shell input:not([type=checkbox]):not([type=radio]):not([type=range]),.oc-shell select,.oc-shell textarea{background:var(--ui-raised);color:var(--ui-text);border-color:var(--ui-line);accent-color:var(--ui-pink)}
+.oc-shell input::placeholder,.oc-shell textarea::placeholder{color:var(--ui-muted);opacity:1}
+.oc-shell input:focus-visible,.oc-shell textarea:focus-visible,.oc-shell select:focus-visible{outline:2px solid var(--ui-pink);outline-offset:2px}
+.oc-shell button:focus-visible,.oc-shell a:focus-visible{outline:2px solid var(--ui-pink);outline-offset:3px}
+.oc-shell input[type=checkbox],.oc-shell input[type=radio]{accent-color:var(--ui-pink)}
+/* 模板页面旧版浅色表面统一替换，图片本身保持原色。 */
+.oc-templates-page .tile,.oc-templates-page .work,.oc-templates-page .role-card,.oc-templates-page .character-panel,.oc-templates-page .secondary,.oc-templates-page .segmented,.oc-templates-page .outfit-options button,.oc-templates-page #jobPanel{background:var(--ui-panel);color:var(--ui-text);border-color:var(--ui-line)}
+.oc-templates-page .ready-role,.oc-templates-page .template-preview,.oc-templates-page .swap-preview img,.oc-templates-page .swap-preview video,.oc-templates-page .role-card img,.oc-templates-page .tile img,.oc-templates-page .character-panel img{background:var(--ui-raised)}
+.oc-templates-page .segmented button.active,.oc-templates-page .outfit-options button.active{background:var(--ui-selected);color:#ffa3c5;border-color:var(--ui-pink)}
+.oc-templates-page .tile:hover,.oc-templates-page .work:hover,.oc-templates-page .role-card:hover{border-color:var(--ui-pink)}
+.oc-shell .discover-card,.oc-shell .category-strip button,.oc-shell .discover-filters input{background:var(--ui-panel);border-color:var(--ui-line);color:var(--ui-text)}
+/* 聊天与角色主页沿用相同表面层级，角色专属色仅保留在插画装饰。 */
+.oc-chat-page .conversation-list,.oc-chat-page .character-profile,.oc-chat-page .conversation-head{background:var(--ui-panel);border-color:var(--ui-line)}
+.oc-chat-page .chat-message,.oc-chat-page .composer form{background:var(--ui-raised);color:var(--ui-text);border-color:var(--ui-line)}
+.oc-chat-page .chat-line.user .chat-message,.oc-chat-page .conversation-item.active,.oc-chat-page #chatChoices button{background:var(--ui-selected);border-color:#e83e7e55;color:var(--ui-text)}
+.oc-chat-page .composer{background:var(--ui-bg);border-color:var(--ui-line)}
+.oc-character-page .chat-link,.oc-character-page .adbtn{background:var(--ui-panel);border-color:var(--ui-line);color:var(--ui-text)}
+.oc-character-page .chat-link:hover,.oc-character-page .adbtn:hover{background:var(--ui-selected);border-color:var(--ui-pink)}
+.oc-shell .pl-card{background:var(--ui-panel);border-color:var(--ui-line)}
