@@ -136,10 +136,11 @@ def chat():
           '当某个已有素材能自然回应当前话题时选择它；不必每轮发送素材。只能选素材清单里的 id，不可编造。'+style_hint)
   persona={'name':c.get('name'),'role':c.get('role'),'type':c.get('type'),'traits':c.get('traits'),'bio':c.get('bio'),'lore':c.get('lore'),'voice':(c.get('profile') or {}).get('voice')}
   try:
-    result=A.llm(system,json.dumps({'角色设定':persona,'叙事设置':{'视角':pov,'回复长度':length,'推进节奏':pace},'素材清单':shortlist,'对话':messages},ensure_ascii=False))
+    result=A.llm(system,json.dumps({'角色设定':persona,'叙事设置':{'视角':pov,'回复长度':length,'推进节奏':pace},'素材清单':shortlist,'对话':messages},ensure_ascii=False),model='deepseek/deepseek-v4.1-flash')
   except Exception as e: return jsonify(error='角色暂时没接上话：'+str(e)[:160]),502
   asset=next((a for a in assets if a['id']==result.get('asset_id')),None)
   state=result.get('state') if isinstance(result.get('state'),dict) else {}
   choices=[str(x)[:100] for x in (result.get('choices') or [])[:3] if str(x).strip()]
   return jsonify(reply=str(result.get('reply') or '')[:1200],asset=asset,choices=choices,
-                 state={k:str(state.get(k) or '')[:80] for k in ('scene','mood','relationship')})
+                 state={k:str(state.get(k) or '')[:80] for k in ('scene','mood','relationship')},
+                 model='DeepSeek V4.1 Flash')
