@@ -37,3 +37,24 @@ body.oc-shell{background:var(--ui-bg);color:var(--ui-text);--bg:var(--ui-bg);--c
 .oc-character-page .chat-link,.oc-character-page .adbtn{background:var(--ui-panel);border-color:var(--ui-line);color:var(--ui-text)}
 .oc-character-page .chat-link:hover,.oc-character-page .adbtn:hover{background:var(--ui-selected);border-color:var(--ui-pink)}
 .oc-shell .pl-card{background:var(--ui-panel);border-color:var(--ui-line)}
+
+/* 二轮统一：覆盖编辑抽屉、玩法弹层和成人区遗留的浅色与酒红主题。 */
+body.oc-shell{--ad-bg:var(--ui-bg);--ad-card:var(--ui-panel);--ad-card2:var(--ui-raised);--ad-fg:var(--ui-text);--ad-mut:var(--ui-muted);--ad-line:var(--ui-line);--ad-bd:var(--ui-line);--ad-wine:var(--ui-pink);--ad-rose:var(--ui-pink);--ad-rose2:#fa92b8}
+body.oc-character-page{--card:229 18% 12%}
+.oc-shell .pl-btn{background:var(--ui-pink);color:#fff;border:1px solid transparent}
+.oc-shell .pl-btn.p{background:var(--ui-pink)}
+.oc-shell .pl-btn.g{background:var(--ui-raised);border-color:var(--ui-line);color:var(--ui-text)}
+.oc-shell .pl-rc,.oc-shell #ed .pan{background:var(--ui-panel);color:var(--ui-text);border-color:var(--ui-line)}
+.oc-shell #ed .x,.oc-shell #ed .tabs button,.oc-shell #ed .mari{background:var(--ui-raised);color:var(--ui-text);border-color:var(--ui-line)}
+.oc-shell #ed .tabs button.on{background:var(--ui-selected);border-color:var(--ui-pink);color:#ffa3c5}
+.oc-shell #ed input,.oc-shell #ed textarea,.oc-shell #ed input:focus,.oc-shell #ed textarea:focus{background:var(--ui-raised);color:var(--ui-text);border-color:var(--ui-line)}
+.oc-shell #ed label,.oc-shell #ed .row,.oc-shell #ed .mari small{color:var(--ui-muted)}
+.oc-shell .hb,.oc-shell .pktip{background:var(--ui-raised);color:var(--ui-text);border:1px solid var(--ui-line)}
+.oc-shell .pl-rc pre{background:var(--ui-bg);color:var(--ui-muted)}
+.oc-shell .pl-w,.oc-shell .pl-wear,.oc-shell .pl-rc .ri img{background:var(--ui-raised)}
+.oc-shell .pl-sub,.oc-shell .pl-note,.oc-shell .pl-rate{color:var(--ui-muted)}
+.oc-shell .chat-premium{background:linear-gradient(110deg,#30212b,var(--ui-panel) 70%);border-color:var(--ui-line)}
+.oc-shell .private-gallery,.oc-shell .private-entry{background:var(--ui-panel);border-color:var(--ui-line)}
+.oc-shell .private-entry:hover{background:var(--ui-raised)}
+.oc-shell .pl-ov{background:#101117ed;z-index:130}
+.oc-shell #ed{z-index:140}
