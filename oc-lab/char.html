@@ -98,7 +98,8 @@ const id=location.pathname.split('/').filter(Boolean).pop();
 function render(c,all){
  const p=c.profile||{}; const name=c.name; document.title=name+' · KusArt';
  const hero=fix(c.img), cut=c.cutout?{...c.cutout,src:fix(c.cutout.src)}:null;
- const posters=(c.images||[]).filter(u=>u!==c.img).map(fix);
+ const galleryLocked=!!c.adult_album_type&&localStorage.getItem('oc-premium-'+c.id)!=='1';
+ const posters=galleryLocked?[]:(c.images||[]).filter(u=>u!==c.img).map(fix);
  const roster=[{id:c.id,name,img:c.img,cutout:c.cutout&&c.cutout.src},...all.filter(x=>x.id!==c.id)].slice(0,8);
  let mode='art';
  const wall=posters.length>=3?`<div aria-hidden class="absolute -inset-x-1/4 -inset-y-1/4 flex -rotate-[8deg] flex-col justify-center gap-4">${[posters,[...posters].reverse()].map((row,i)=>`<div class="flex w-max gap-4 motion-safe:[animation:library-poster-wall_90s_linear_infinite]" ${i?'style="animation-direction:reverse"':''}>${[...row,...row,...row].map(u=>`<img src="${u}" class="h-[min(46vh,420px)] w-auto rounded-md">`).join('')}</div>`).join('')}</div>`:'';
