@@ -162,9 +162,9 @@ function render(c,all){
 
  ${(p.files||[]).length?`<section class="mt-24 grid gap-10 border-t border-foreground/10 pt-16 md:mt-32 lg:grid-cols-12 lg:gap-12">
   <div class="lg:col-span-4"><div class="lg:sticky lg:top-24"><p class="${eyebrow}">Archive · 档案 ${AI}${ED('files')}</p><h2 class="${displayTitle} mt-4 text-balance text-3xl leading-[1.05] md:text-[2.4rem]">${esc(name)} 的档案</h2></div></div>
-  <div class="lg:col-span-7 lg:col-start-6">${p.files.map((f,i)=>`<details ${i?'':'open'} class="group border-t border-foreground/10 py-8 first:border-t-0 first:pt-0 last:border-b">
+  <div class="lg:col-span-7 lg:col-start-6">${p.files.map((f,i)=>`<details ${c.tavern_card?'':i?'':'open'} class="group border-t border-foreground/10 py-8 first:border-t-0 first:pt-0 last:border-b">
    <summary class="flex cursor-pointer list-none items-start gap-5"><span class="mt-1.5 shrink-0 font-mono text-xs tabular-nums text-[var(--accent)]">FILE ${String(i+1).padStart(2,'0')}</span><span class="min-w-0 flex-1"><span class="block font-space text-xl font-medium text-foreground md:text-2xl">${esc(f.title)}</span><span class="mt-2 block truncate text-[15px] text-foreground/45 group-open:hidden">${esc(f.body)}</span></span><span class="mt-1.5 shrink-0 text-foreground/40 transition-transform group-open:rotate-180">${DOWN(18)}</span></summary>
-   <p class="mt-5 text-[17px] leading-8 text-foreground/75 md:pl-[4.25rem]">${esc(f.body)}</p></details>`).join('')}</div>
+   <p class="mt-5 whitespace-pre-wrap break-words text-[15px] leading-7 text-foreground/75 md:pl-[4.25rem]">${esc(f.body)}</p></details>`).join('')}</div>
  </section>`:''}
 
  ${(p.signatures||[]).length?`<section class="mt-24 grid gap-10 border-t border-foreground/10 pt-16 md:mt-32 lg:grid-cols-12 lg:gap-12">

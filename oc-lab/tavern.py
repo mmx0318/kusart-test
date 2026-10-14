@@ -1,5 +1,5 @@
 # 酒馆 PNG 角色卡导入：解析元数据，不调用模型重写原设定。
-import base64,hashlib,io,json,os,time,uuid
+import base64,hashlib,io,json,os,time,uuid,re
 from pathlib import Path
 from PIL import Image,UnidentifiedImageError
 from flask import Blueprint,request,jsonify
@@ -32,13 +32,19 @@ def profile_from_card(data):
     personality=data.get('personality') or ''
     scenario=data.get('scenario') or ''
     greeting=data.get('first_mes') or ''
-    voices=([dict(context='初次见面',line=greeting)] if greeting else [])
+    def display_text(text):
+        text=re.sub(r'\{\{(?:user|char)\}\}',lambda m:'你' if 'user' in m.group() else data.get('name','角色'),text)
+        return text.strip()
+    overview=display_text(personality or scenario or description)
+    overview=re.sub(r'^.*?(?:name|姓名)\s*[:：]', '姓名：', overview, count=1, flags=re.I) if overview.startswith('{{') else overview
+    overview=overview[:110]+('…' if len(overview)>110 else '')
+    voices=([dict(context='初次见面',line=display_text(greeting))] if greeting else [])
     voices += [dict(context='其他开场',line=x) for x in data.get('alternate_greetings',[]) if isinstance(x,str) and x]
-    return dict(summary=description or personality or scenario,epithet='酒馆导入角色',
-      story=[scenario] if scenario else [],voice=voices,
+    return dict(summary=overview,epithet='酒馆导入角色',
+      story=[],voice=voices,
       dossier=[dict(label='性格',value=personality)] if personality else [],
       attributes=[dict(label=k,value=str(v)) for k,v in [('作者',data.get('creator')),('版本',data.get('character_version'))] if v],
-      files=[dict(title=k,body=v) for k,v in [('角色描述',description),('性格设定',personality),('初始场景',scenario),('对话示例',data.get('mes_example') or ''),('作者说明',data.get('creator_notes') or '')] if v],signatures=[])
+      files=[dict(title=k,body=display_text(v)) for k,v in [('角色描述',description),('性格设定',personality),('初始场景',scenario),('对话示例',data.get('mes_example') or ''),('作者说明',data.get('creator_notes') or '')] if v],signatures=[])
 
 @bp.post('/api/tavern/import')
 def import_card():
