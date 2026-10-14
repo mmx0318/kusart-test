@@ -517,5 +517,6 @@ import sys as _sys, plays; plays.init(_sys.modules[__name__]); app.register_blue
 import adult; adult.init(_sys.modules[__name__]); app.register_blueprint(adult.bp)   # 10-10 成人模式（类型卡 / 剧情列表 / 互动剧情播放器）
 import templates; templates.init(_sys.modules[__name__],plays); app.register_blueprint(templates.bp)
 import discover; app.register_blueprint(discover.bp)
+import tavern; app.register_blueprint(tavern.bp)
 import demo; demo.init(_sys.modules[__name__]); app.register_blueprint(demo.bp)   # demo：剧情工作台与角色聊天
 if __name__=='__main__': app.run('127.0.0.1',8791,threaded=True)
