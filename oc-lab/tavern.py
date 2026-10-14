@@ -31,7 +31,7 @@ def import_card():
     f=request.files.get('file')
     if not f:return jsonify(error='请选择 PNG 角色卡。'),400
     try:raw=f.read();card,data,cover=decode_card(raw)
-    except (ValueError,UnidentifiedImageError,OSError,Image.DecompressionBombError) as e:return jsonify(error=str(e)),400
+    except (ValueError,UnidentifiedImageError,OSError,Image.DecompressionBombError) as e:return jsonify(error=str(e),no_card=str(e).startswith('图片没有角色卡数据')),400
     digest=hashlib.sha256(raw).hexdigest()
     for p in (ROOT/'chars').glob('*.json'):
         try:c=json.loads(p.read_text())
