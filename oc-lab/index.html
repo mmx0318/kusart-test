@@ -5,11 +5,12 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&family=Shantell+Sans:wght@500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="base.css?v=1014home-entry">
 <link rel="stylesheet" href="plays.css?v=1010y"><link rel="stylesheet" href="adult.css?v=1011m"><meta name="theme-color" content="#F8F7F7">
-</head><body>
+<link rel="stylesheet" href="shell.css?v=1014discover"></head><body><script src="shell.js?v=1014discover"></script>
 <div class="top"><img class="logo" src="a/logo.png" alt="KusArt"><span class="tag">真实测试 v0.6</span><span class="sp"></span><span class="cr" id="spent">✦ 本次已用 0</span>
 <label title="测试站用：切换会员 / 非会员两种状态" style="display:none"><input type="checkbox" id="vipT"> 模拟会员</label><a class="demo-link" href="demo">剧情与聊天 Demo</a><label class="adsw" title="成人向虚构内容，需年满 18 岁"><input type="checkbox" id="adT"><i></i>成人模式</label><label><input type="checkbox" id="nt"> 设计说明</label><button onclick="reset()">重来</button></div>
 <div class="stage" id="st"></div>
 <input type="file" id="file" accept="image/*" hidden>
+<script>if(!new URLSearchParams(location.search).has('adult_oc'))localStorage.removeItem('ol_adult');</script>
 <script src="adult.js?v=1011l"></script>
 <script>
 /* 和原型 v0.6 同一套界面；区别：描述 / 设定 / 主页文案由 Kimi K2.6 现写，候选图由 prod Kusa-Anima 真出（加速 + 画风增强，一次 4 张 = 60 积分） */
