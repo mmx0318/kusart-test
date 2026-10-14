@@ -210,3 +210,6 @@
 .pl-rc pre{white-space:pre-wrap;word-break:break-word;background:#0c0c0f;border-radius:8px;padding:10px;font-size:11px;line-height:1.5;max-height:240px;overflow:auto;color:#cfd2d8}
 .pl-rc .pl-btn{width:100%;margin-top:12px}
 @media (max-width:767px){.pl-lbw{flex-direction:column;align-items:stretch}.pl-lbw>img,.pl-lbw>video{max-height:60vh;align-self:center}.pl-rc{flex:none;max-height:none}}
+
+/* 角色主页创作入口：内容居中并按文字自适应，避免继承抽卡按钮伸展。 */
+.pl-create-link{display:inline-flex;align-items:center;justify-content:center;gap:8px;flex:none;height:auto;min-height:48px;max-width:100%;padding:12px 24px;margin:10px 0 22px;line-height:1.5;text-align:center;text-decoration:none;background:var(--ui-pink,#e83e7e);color:#fff;white-space:normal;overflow-wrap:anywhere}.pl-create-link:hover{background:var(--ui-pink-hover,#f05290)}
