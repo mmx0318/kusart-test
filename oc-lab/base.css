@@ -536,3 +536,25 @@ body:not(.notes) .sc .stl{display:none}
 .dett small{font-size:12px;font-weight:400;color:var(--muted)}
 .detw .dettx{display:none;width:100%;margin-top:8px;padding:10px 12px;border-radius:12px;resize:vertical;min-height:110px;font:inherit;font-size:15px;line-height:1.6;box-sizing:border-box}
 .detw.open .dettx{display:block}
+
+/* 角色画廊：按参考图铺满可用屏宽，图片按原比例瀑布流展示 */
+.stage[data-step="0"] #mineBox{width:calc(100vw - 40px);margin-left:calc(50% - 50vw + 20px)}
+.char-gallery{margin-top:40px;padding:0;border:0;border-radius:0;background:none;box-shadow:none}
+.char-gallery-head{padding:0 2px;margin-bottom:18px}
+.char-gallery-count{padding:0;background:none;color:var(--muted);font-weight:500}
+.mine{display:block;columns:5;column-gap:6px}
+.mine-card{position:relative;break-inside:avoid;margin-bottom:6px;border:0;border-radius:12px;box-shadow:none;overflow:hidden}
+.mine-card:hover{transform:none;box-shadow:none}
+.mine-art{display:block;height:auto;background:#eeecee}
+.mine-art img{display:block;width:100%;height:auto;object-fit:cover;object-position:top}
+.mine-name{position:absolute;inset:auto 0 0;padding:46px 16px 16px;background:linear-gradient(transparent,rgba(0,0,0,.72));color:#fff;text-align:left;font-size:16px;text-shadow:0 1px 3px #0006;pointer-events:none}
+@media(max-width:1599px){.mine{columns:4}}
+@media(max-width:1199px){.mine{columns:3}}
+@media(max-width:959px){
+ .stage[data-step="0"] #mineBox{width:calc(100vw - 20px);margin-left:calc(50% - 50vw + 10px)}
+ .char-gallery{padding:0;margin-top:30px;border-radius:0}
+ .char-gallery-head{padding:0 8px;gap:10px}
+ .mine{columns:2;column-gap:5px}
+ .mine-card{border-radius:9px;margin-bottom:5px}
+ .mine-name{padding:34px 10px 10px;font-size:13px}
+}
