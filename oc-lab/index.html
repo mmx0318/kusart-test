@@ -49,7 +49,7 @@ B[0]=()=>{$$('.tp[data-v]').forEach(b=>b.onclick=()=>{S.type=b.dataset.v;S.custo
  // 10-09 木木夕：自定义改成底部弹层（不再在卡片下面展开输入框），会员功能
  // 10-10 木木夕：自定义不用弹层了 → 进一个页面依次选 性别 → 年龄段 → 物种，再进 tag 页（补充描述 / 参考图在 tag 页的「想再补充点什么」里）
  $('#cus').onclick=()=>vipGate('自定义角色',()=>{$('.tsel').classList.add('picked');$('#cus').classList.add('sel');setTimeout(()=>go(0.5),250)});
- api('chars').then(cs=>{if(!cs.length)return;$('#mineBox').innerHTML=`<div class="lbl" style="margin-top:22px">大家已经创建的角色（${cs.length}）</div><div class="mine">${cs.map(c=>`<a href="c/${c.id}" target="_blank"><img src="${esc(c.img)}"><span>${esc(c.name)}</span></a>`).join('')}</div>`}).catch(()=>{})};
+ api('chars').then(cs=>{if(!cs.length)return;$('#mineBox').innerHTML=`<section class="char-gallery" aria-labelledby="char-gallery-title"><div class="char-gallery-head"><div><h2 id="char-gallery-title">大家创造的角色</h2><p>逛逛角色画廊，点开任意角色看看 TA 的故事</p></div><span class="char-gallery-count">${cs.length} 个角色</span></div><div class="mine">${cs.map(c=>`<a class="mine-card" href="c/${c.id}" target="_blank" aria-label="查看角色：${esc(c.name)}"><div class="mine-art"><img src="${esc(c.img)}" alt="${esc(c.name)}" loading="lazy"></div><span class="mine-name">${esc(c.name)}</span></a>`).join('')}</div></section>`}).catch(()=>{})};
 
 /* 2 画风 */
 const STYC={};let STY=null;
