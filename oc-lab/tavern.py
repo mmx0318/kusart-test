@@ -35,15 +35,26 @@ def profile_from_card(data):
     def display_text(text):
         text=re.sub(r'\{\{(?:user|char)\}\}',lambda m:'你' if 'user' in m.group() else data.get('name','角色'),text)
         return text.strip()
-    overview=display_text(personality or scenario or description)
-    overview=re.sub(r'^.*?(?:name|姓名)\s*[:：]', '姓名：', overview, count=1, flags=re.I) if overview.startswith('{{') else overview
-    overview=overview[:110]+('…' if len(overview)>110 else '')
+    def field(labels):
+        pattern=r'(?:^|[\n;；]|\s)(?:'+labels+r')\s*[:：]\s*([^\n;；]+)'
+        m=re.search(pattern,description,re.I)
+        return m.group(1).strip()[:48] if m else ''
+    identity=field('身份|职业|occupation|role')
+    age=field('年龄|age')
+    gender=field('性别|gender')
+    # 首屏展示已有结构信息；不把面向模型的指令当作人物简介。
+    overview=(display_text(personality)[:100] if personality else '通过酒馆角色卡导入。完整人物设定、初始场景和对话内容可在下方档案查看。')
+    attributes=[dict(label=k,value=v or '未填写') for k,v in [
+      ('所属',field('所属|世界观|world')),('身份',identity),
+      ('形态',field('种族|形态|species')),('年龄感',age),
+      ('性格',display_text(personality)[:60]),('画风','保持原图画风')]]
+    if gender: attributes.append(dict(label='性别',value=gender))
     voices=([dict(context='初次见面',line=display_text(greeting))] if greeting else [])
     voices += [dict(context='其他开场',line=x) for x in data.get('alternate_greetings',[]) if isinstance(x,str) and x]
-    return dict(summary=overview,epithet='酒馆导入角色',
+    return dict(summary=overview,epithet=identity or '原创角色 · 酒馆导入',
       story=[],voice=voices,
       dossier=[dict(label='性格',value=personality)] if personality else [],
-      attributes=[dict(label=k,value=str(v)) for k,v in [('作者',data.get('creator')),('版本',data.get('character_version'))] if v],
+      attributes=attributes,
       files=[dict(title=k,body=display_text(v)) for k,v in [('角色描述',description),('性格设定',personality),('初始场景',scenario),('对话示例',data.get('mes_example') or ''),('作者说明',data.get('creator_notes') or '')] if v],signatures=[])
 
 @bp.post('/api/tavern/import')

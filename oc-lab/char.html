@@ -138,7 +138,7 @@ function render(c,all){
     <h1 class="${displayTitle} mt-1 text-balance text-[3rem] leading-[0.92] md:text-[4rem]">${esc(name)}</h1>
     <div class="char-actions mt-4 flex gap-2 md:hidden"><a class="${solidButton} flex-1 justify-center !bg-[#d81b60] !text-white shadow-[0_8px_24px_rgba(216,27,96,.35)] hover:!bg-[#c2185b] md:hidden" href="#plays">用 ${esc(name)} 创作 ${ARROW}</a><a class="chat-link" href="../chat?cid=${encodeURIComponent(c.id)}">和 ${esc(name)} 互动</a>${ADB('h-auto')}</div>${ADT}
     ${(p.attributes||[]).length?`<dl class="mt-5 divide-y divide-white/10 rounded-lg border border-white/10 border-l-2 border-l-[var(--accent)] bg-black/45 text-sm backdrop-blur">${p.attributes.map(a=>`<div class="grid grid-cols-[5.5rem_1fr] gap-3 px-4 py-1.5"><dt class="text-white/45">${esc(a.label)}</dt><dd class="text-white/90">${esc(a.value)}</dd></div>`).join('')}</dl>`:''}
-    ${p.summary?`<p class="mt-6 text-[15px] leading-7 text-white/80">${esc(p.summary)}</p><a href="#story" class="mt-3 inline-flex items-center gap-1.5 self-start text-xs text-white/50 transition-colors hover:text-white">读 ${esc(name)} 的故事${DOWN()}</a>`:`<p class="mt-6 text-[15px] leading-7 text-white/80">${esc(c.bio)}</p>`}
+    ${p.summary?`<p class="mt-6 text-[15px] leading-7 text-white/80">${esc(p.summary)}</p><a href="${c.tavern_card?'#importedArchive':'#story'}" class="mt-3 inline-flex items-center gap-1.5 self-start text-xs text-white/50 transition-colors hover:text-white">读 ${esc(name)} 的故事${DOWN()}</a>`:`<p class="mt-6 text-[15px] leading-7 text-white/80">${esc(c.bio)}</p>`}
     <div class="char-actions mt-6 hidden items-center gap-3 md:flex"><a class="${solidButton} !bg-[#d81b60] !text-white shadow-[0_8px_24px_rgba(216,27,96,.35)] hover:!bg-[#c2185b] inline-flex" href="#plays">用 ${esc(name)} 创作 ${ARROW}</a><a class="chat-link" href="../chat?cid=${encodeURIComponent(c.id)}">和 ${esc(name)} 互动</a>${ADB('')}</div>${ADT}
    </div>
   </div>
@@ -160,7 +160,7 @@ function render(c,all){
    <div class="mt-10 flex flex-wrap gap-2">${voice.map((v,i)=>`<button data-vt="${i}" class="relative overflow-hidden rounded-full border px-4 py-2 text-xs transition-colors">${esc(v.context)}</button>`).join('')}</div></div>
  </section>`:''}
 
- ${(p.files||[]).length?`<section class="mt-24 grid gap-10 border-t border-foreground/10 pt-16 md:mt-32 lg:grid-cols-12 lg:gap-12">
+ ${(p.files||[]).length?`<section id="importedArchive" class="mt-24 grid gap-10 border-t border-foreground/10 pt-16 md:mt-32 lg:grid-cols-12 lg:gap-12">
   <div class="lg:col-span-4"><div class="lg:sticky lg:top-24"><p class="${eyebrow}">Archive · 档案 ${AI}${ED('files')}</p><h2 class="${displayTitle} mt-4 text-balance text-3xl leading-[1.05] md:text-[2.4rem]">${esc(name)} 的档案</h2></div></div>
   <div class="lg:col-span-7 lg:col-start-6">${p.files.map((f,i)=>`<details ${c.tavern_card?'':i?'':'open'} class="group border-t border-foreground/10 py-8 first:border-t-0 first:pt-0 last:border-b">
    <summary class="flex cursor-pointer list-none items-start gap-5"><span class="mt-1.5 shrink-0 font-mono text-xs tabular-nums text-[var(--accent)]">FILE ${String(i+1).padStart(2,'0')}</span><span class="min-w-0 flex-1"><span class="block font-space text-xl font-medium text-foreground md:text-2xl">${esc(f.title)}</span><span class="mt-2 block truncate text-[15px] text-foreground/45 group-open:hidden">${esc(f.body)}</span></span><span class="mt-1.5 shrink-0 text-foreground/40 transition-transform group-open:rotate-180">${DOWN(18)}</span></summary>
