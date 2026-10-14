@@ -108,14 +108,16 @@ def labpage(name):
 def sx8img(name): p=os.path.join(HERE,'sx8',os.path.basename(name)); return send_file(p,max_age=3600) if os.path.exists(p) else abort(404)
 
 # ---------- 文字模型
-def llm(system,user,model=KIMI,img=None,tries=2):
+def llm(system,user,model=KIMI,img=None,tries=2,max_tokens=None,usage_sink=None):
   content=user if not img else [{'type':'text','text':user},{'type':'image_url','image_url':{'url':img}}]
   body={'model':model,'response_format':{'type':'json_object'},'messages':[{'role':'system','content':system},{'role':'user','content':content}]}
+  if max_tokens is not None: body['max_tokens']=max_tokens
   if model==KIMI: body.update(provider={'order':['Fireworks','Together','Inceptron','DeepInfra'],'allow_fallbacks':True},reasoning={'enabled':False})
   err=None
   for _ in range(tries):
     try:
       r=requests.post('https://openrouter.ai/api/v1/chat/completions',headers={'Authorization':'Bearer '+OR_KEY},json=body,timeout=60).json()
+      if usage_sink is not None: usage_sink.update(r.get('usage') or {})
       t=r['choices'][0]['message']['content']
       return json.loads(t[t.find('{'):t.rfind('}')+1])
     except Exception as e: err=f'{type(e).__name__}: {e}'

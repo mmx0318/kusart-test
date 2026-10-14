@@ -126,10 +126,14 @@ def story_get(sid):
 def chat():
   d=request.get_json(silent=True) or {}; c=_char(d.get('cid')); messages=d.get('messages') or []
   if not messages: return jsonify(error='请先发一条消息'),400
-  messages=[{'role':'assistant' if x.get('role')=='assistant' else 'user','content':str(x.get('content') or '')[:1000]} for x in messages[-12:]]
+  tier=d.get('tier','immersive')
+  configs={'daily':(8192,600),'immersive':(32768,1000),'story':(65536,1600)}
+  if tier not in configs: return jsonify(error='请选择有效聊天档位'),400
+  budget,output_limit=configs[tier]
+  messages=[{'role':'assistant' if x.get('role')=='assistant' else 'user','content':str(x.get('content') or '')} for x in messages if isinstance(x,dict)]
   assets=_assets(c); shortlist=[dict(id=x['id'],kind=x['kind'],title=x['title'],hint=x['hint']) for x in assets]
   style=d.get('style') or {}; pov=style.get('pov','second'); length=style.get('length','medium'); pace=style.get('pace','natural')
-  style_hint="默认1~3句口头台词；short更简短，long可适度展开但不要独白。尊重推进节奏，不强制每轮推进剧情。"
+  style_hint={'short':'台词1~3句，简短自然。','medium':'台词2~5句，适度互动。','long':'台词5~10句，可展开剧情但不写冗长独白。'}.get(length,'台词2~5句，适度互动。')+'尊重推进节奏，不强制每轮推进剧情。'
   system=('你正在扮演用户原创角色，与用户进行自然中文角色对话。reply只写角色实际说出口的台词，不夹带第一人称行动描写。action可为空；有动作时用第三人称短句，最多一句，不写用户动作。优先回应用户当前话题，保持个性但不每轮反问。旧聊天中的小说格式不是格式示范。严格依照角色设定和说话风格；不替用户决定用户的动作或想法。'
           '根据对话生成 2~3 条简短、方向不同的后续选项供用户点选，同时保留用户自由输入。'
           '只输出 JSON：{"reply":"口头台词","action":"可选第三人称动作或空","asset_id":"素材id或空","media_reason":"none/requested/story_event","choices":["选项一","选项二"],"state":{"scene":"当前地点/场景","mood":"角色情绪","relationship":"关系进展"}}。'
@@ -137,8 +141,22 @@ def chat():
   persona={'name':c.get('name'),'role':c.get('role'),'type':c.get('type'),'traits':c.get('traits'),'bio':c.get('bio'),'lore':c.get('lore'),'voice':(c.get('profile') or {}).get('voice')}
   from roleplay import fallback
   persona['互动角色卡']=c.get('roleplay') or fallback(c)
+  payload={'角色设定':persona,'叙事设置':{'视角':pov,'回复长度':length,'推进节奏':pace},'素材清单':shortlist,'当前状态':d.get('state') or {},'对话':[]}
+  # UTF-8字节数作为保守容量估算，暂不宣称是模型精确分词结果。
+  def estimate(): return len(system.encode('utf-8'))+len(json.dumps(payload,ensure_ascii=False).encode('utf-8'))+256
+  if estimate()>budget: return jsonify(error='角色设定超过当前档位容量，请选择更高档位或精简人设。'),400
+  for m in reversed(messages):
+    payload['对话'].insert(0,m)
+    if estimate()>budget:
+      payload['对话'].pop(0)
+      break
+  if not payload['对话']: return jsonify(error='本条消息超过当前档位容量，请缩短消息或选择更高档位。'),400
+  usage={}
   try:
-    result=A.llm(system,json.dumps({'角色设定':persona,'叙事设置':{'视角':pov,'回复长度':length,'推进节奏':pace},'素材清单':shortlist,'当前状态':d.get('state') or {},'对话':messages},ensure_ascii=False),model='deepseek/deepseek-v4.1-flash')
+    result=A.llm(system,json.dumps(payload,ensure_ascii=False),model='deepseek/deepseek-v4.1-flash',max_tokens=output_limit,usage_sink=usage)
+    # 仅记录消耗，不保存私有对话正文。
+    with open(os.path.join(DATA,'chat_usage.jsonl'),'a') as f:
+      f.write(json.dumps({'time':time.time(),'tier':tier,'usage':usage},ensure_ascii=False)+'\n')
   except Exception as e: return jsonify(error='角色暂时没接上话：'+str(e)[:160]),502
   asset=next((a for a in assets if a['id']==result.get('asset_id')),None)
   # 普通对话不附带素材；剧情素材与最近发送的内容去重并保留间隔。
@@ -148,6 +166,6 @@ def chat():
     asset=None
   state=result.get('state') if isinstance(result.get('state'),dict) else {}
   choices=[str(x)[:100] for x in (result.get('choices') or [])[:3] if str(x).strip()]
-  return jsonify(reply=str(result.get('reply') or '')[:1200],action=str(result.get('action') or '')[:120],asset=asset,choices=choices,
+  return jsonify(tier=tier,usage=usage,context_messages=len(payload['对话']),reply=str(result.get('reply') or '')[:6000],action=str(result.get('action') or '')[:120],asset=asset,choices=choices,
                  state={k:str(state.get(k) or '')[:80] for k in ('scene','mood','relationship')},
                  model='DeepSeek V4.1 Flash')
