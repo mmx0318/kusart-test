@@ -26,6 +26,20 @@ def decode_card(raw):
         cover=im.convert('RGBA');cover.thumbnail((1600,2400));out=io.BytesIO();cover.save(out,'PNG')
     return card,data,out.getvalue()
 
+def profile_from_card(data):
+    # 只映射源文件已有字段，不生成新的角色经历。
+    description=data.get('description') or ''
+    personality=data.get('personality') or ''
+    scenario=data.get('scenario') or ''
+    greeting=data.get('first_mes') or ''
+    voices=([dict(context='初次见面',line=greeting)] if greeting else [])
+    voices += [dict(context='其他开场',line=x) for x in data.get('alternate_greetings',[]) if isinstance(x,str) and x]
+    return dict(summary=description or personality or scenario,epithet='酒馆导入角色',
+      story=[scenario] if scenario else [],voice=voices,
+      dossier=[dict(label='性格',value=personality)] if personality else [],
+      attributes=[dict(label=k,value=str(v)) for k,v in [('作者',data.get('creator')),('版本',data.get('character_version'))] if v],
+      files=[dict(title=k,body=v) for k,v in [('角色描述',description),('性格设定',personality),('初始场景',scenario),('对话示例',data.get('mes_example') or ''),('作者说明',data.get('creator_notes') or '')] if v],signatures=[])
+
 @bp.post('/api/tavern/import')
 def import_card():
     f=request.files.get('file')
@@ -39,7 +53,7 @@ def import_card():
         if c.get('tavern_import_hash')==digest:return jsonify(id=c['id'],name=c['name'],duplicate=True)
     cid=uuid.uuid4().hex[:10];src='u/'+cid+'_tavern.png'
     rp={k:data.get(k,'') for k in ('description','personality','scenario','first_mes','mes_example')}
-    c=dict(id=cid,name=data['name'].strip(),img=src,images=[src],type='其他',age='不详',gender='不详',role='导入角色',traits=[],bio=data.get('description','')[:140],lore=data.get('description',''),created=time.strftime('%Y-%m-%d %H:%M'),works=[],roleplay=rp,tavern_card=card,tavern_import_hash=digest,profile=dict(summary=data.get('description',''),voice=[],story=[],dossier=[],attributes=[],files=[],signatures=[]))
+    c=dict(id=cid,name=data['name'].strip(),img=src,images=[src],type='其他',age='不详',gender='不详',role='导入角色',traits=[],bio=data.get('description','')[:140],lore=data.get('description',''),created=time.strftime('%Y-%m-%d %H:%M'),works=[],roleplay=rp,tavern_card=card,tavern_import_hash=digest,profile=profile_from_card(data))
     # 未识别字段和世界书原样保存；外部系统指令不覆盖本站提示词。
     (ROOT/'u').mkdir(exist_ok=True);(ROOT/'chars').mkdir(exist_ok=True)
     (ROOT/src).write_bytes(cover)
