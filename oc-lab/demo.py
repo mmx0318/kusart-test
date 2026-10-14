@@ -128,12 +128,18 @@ def chat():
   if not messages: return jsonify(error='请先发一条消息'),400
   messages=[{'role':'assistant' if x.get('role')=='assistant' else 'user','content':str(x.get('content') or '')[:1000]} for x in messages[-12:]]
   assets=_assets(c); shortlist=[dict(id=x['id'],kind=x['kind'],title=x['title'],hint=x['hint']) for x in assets]
-  system=('你正在扮演用户原创角色，与用户进行自然中文聊天。严格依照角色设定和说话风格。'
-          '只输出 JSON：{"reply":"角色回复","asset_id":"素材id或空"}。'
-          '当某个已有素材能自然回应当前话题时选择它；不必每轮发送素材。只能选素材清单里的 id，不可编造。')
+  style=d.get('style') or {}; pov=style.get('pov','second'); length=style.get('length','medium'); pace=style.get('pace','natural')
+  style_hint=f"叙事要求：视角={ {'second':'用第二人称称呼用户','first':'角色用第一人称叙述','third':'用第三人称旁白'} .get(pov,'用第二人称称呼用户')}；回复长度={ {'short':'1~3句','medium':'3~6句','long':'6~10句'} .get(length,'3~6句')}；推进节奏={ {'slow':'慢热，留空间给用户回应','natural':'自然推进','fast':'主动推动事件发展'} .get(pace,'自然推进')}。"
+  system=('你正在扮演用户原创角色，与用户进行自然中文 Story Chat。严格依照角色设定和说话风格；不替用户决定用户的动作或想法。'
+          '根据对话生成 2~3 条简短、方向不同的后续选项供用户点选，同时保留用户自由输入。'
+          '只输出 JSON：{"reply":"角色回复","asset_id":"素材id或空","choices":["选项一","选项二"],"state":{"scene":"当前地点/场景","mood":"角色情绪","relationship":"关系进展"}}。'
+          '当某个已有素材能自然回应当前话题时选择它；不必每轮发送素材。只能选素材清单里的 id，不可编造。'+style_hint)
   persona={'name':c.get('name'),'role':c.get('role'),'type':c.get('type'),'traits':c.get('traits'),'bio':c.get('bio'),'lore':c.get('lore'),'voice':(c.get('profile') or {}).get('voice')}
   try:
-    result=A.llm(system,json.dumps({'角色设定':persona,'素材清单':shortlist,'对话':messages},ensure_ascii=False))
+    result=A.llm(system,json.dumps({'角色设定':persona,'叙事设置':{'视角':pov,'回复长度':length,'推进节奏':pace},'素材清单':shortlist,'对话':messages},ensure_ascii=False))
   except Exception as e: return jsonify(error='角色暂时没接上话：'+str(e)[:160]),502
   asset=next((a for a in assets if a['id']==result.get('asset_id')),None)
-  return jsonify(reply=str(result.get('reply') or '')[:1200],asset=asset)
+  state=result.get('state') if isinstance(result.get('state'),dict) else {}
+  choices=[str(x)[:100] for x in (result.get('choices') or [])[:3] if str(x).strip()]
+  return jsonify(reply=str(result.get('reply') or '')[:1200],asset=asset,choices=choices,
+                 state={k:str(state.get(k) or '')[:80] for k in ('scene','mood','relationship')})
