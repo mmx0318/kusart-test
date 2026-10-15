@@ -138,3 +138,56 @@ def snapshot_image(name):
     path=ROOT/'u'/'snapshots'/name
     if not path.is_file():abort(404)
     return send_file(path,mimetype='image/png',max_age=3600)
+
+
+@bp.get('/api/snapshots/<sid>/share')
+def share_snapshot(sid):
+    import re
+    from flask import abort
+    from PIL import ImageDraw,ImageFont
+    from worldbooks import read
+    import character_taxonomy as taxonomy
+    if not re.fullmatch(r'[a-f0-9]{32}',sid):abort(404)
+    w=read(ROOT/'snapshot_data'/(sid+'.json'),None)
+    if not w:abort(404)
+    c=read(ROOT/'chars'/(str(w.get('cid'))+'.json'),{})
+    adult=request.cookies.get('oc_adult')=='1'
+    rating=taxonomy.read(c).get('rating') if c else 'pending'
+    if rating not in (('safe','nsfw') if adult else ('safe',)) or (w.get('nsfw') and not adult):abort(403)
+    image=ROOT/'u'/'snapshots'/(sid+'.png')
+    if not image.is_file():abort(404)
+    # 只排版已有图片和剧情资料，不调用模型，也不修改原图。
+    canvas=Image.open(image).convert('RGB').resize((1600,900),Image.Resampling.LANCZOS).convert('RGBA')
+    overlay=Image.new('RGBA',canvas.size);draw=ImageDraw.Draw(overlay)
+    for y in range(410,900):
+        alpha=int(242*((y-410)/490)**.55)
+        draw.line([(0,y),(1600,y)],fill=(10,10,17,alpha))
+    canvas=Image.alpha_composite(canvas,overlay);draw=ImageDraw.Draw(canvas)
+    regular='/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc'
+    bold='/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc'
+    font=lambda n,strong=False:ImageFont.truetype(bold if strong else regular,n)
+    def lines(text,f,width,count):
+        result=[];line=''
+        for ch in str(text or '').replace('\n',' '):
+            if draw.textlength(line+ch,font=f)>width:
+                result.append(line);line=ch
+                if len(result)==count:break
+            else:line+=ch
+        else:
+            if line:result.append(line)
+            return result
+        result=result[:count];last=result[-1]
+        while last and draw.textlength(last+'…',font=f)>width:last=last[:-1]
+        result[-1]=last+'…';return result
+    x=58;y=550
+    draw.text((x,y),'剧情快照 · '+str(c.get('name') or '')[:40],font=font(24),fill='#dbc8d7');y+=42
+    draw.text((x,y),lines(w.get('title') or '这一幕',font(32,True),1480,1)[0],font=font(32,True),fill='white');y+=55
+    dialogue=str(w.get('dialogue') or '')
+    if dialogue:
+        draw.line([(x,y+6),(x,y+82)],fill='#e28eb6',width=4)
+        for line in lines('“'+dialogue+'”',font(35),1430,2):draw.text((x+22,y),line,font=font(35),fill='white');y+=48
+    for line in lines(w.get('progress') or w.get('scene') or '',font(23),1480,2):draw.text((x,y+8),line,font=font(23),fill='#c9c0cf');y+=34
+    draw.text((x,856),str(w.get('scene') or '')[:70],font=font(18),fill='#b8a5bd')
+    draw.text((1390,856),'OC Lab',font=font(20,True),fill='#e7b1cb')
+    output=io.BytesIO();canvas.convert('RGB').save(output,format='PNG');output.seek(0)
+    return send_file(output,mimetype='image/png',as_attachment=True,download_name='snapshot-'+sid[:8]+'-share.png',max_age=0)
