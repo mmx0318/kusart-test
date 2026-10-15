@@ -19,6 +19,7 @@ function apply(){document.body.classList.toggle('adult',AD.on);const t=document.
 apply();
 document.addEventListener('DOMContentLoaded',()=>{const oc=new URLSearchParams(location.search).get('adult_oc');   // 10-10 普通角色主页「成人模式」按钮跳过来
  const vw=new URLSearchParams(location.search).get('vid');
+ if(new URLSearchParams(location.search).has('adult_entry'))setTimeout(()=>{AD.on?home():gate()},0);
  const albumType=new URLSearchParams(location.search).get('adult_type');
  if(albumType&&TYPES.some(t=>t[0]===albumType))setTimeout(()=>openType(albumType),0);
  if(oc)setTimeout(()=>{const go=async()=>{await ocGen(oc);if(vw)try{const w=((await (await fetch('adult/gen/list?cid='+encodeURIComponent(oc),{cache:'no-store'})).json()).works||[]).find(x=>x.id===vw);if(w)vidSheet(w)}catch(e){}};AD.on?go():gate(go)},0);
