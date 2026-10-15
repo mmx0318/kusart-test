@@ -1,10 +1,16 @@
 # 发现页只读取已有角色和素材；浏览不触发生图或角色档案补写。
-import json, os
+import json, os, threading
 from pathlib import Path
 from flask import Blueprint, jsonify, send_file, request
 import character_taxonomy as taxonomy
 ROOT=Path(__file__).resolve().parent
 bp=Blueprint('discover',__name__)
+# 目录变化时才重读原卡；缓存按成年访问权限与响应类型隔离。
+_catalog_cache={}
+_catalog_lock=threading.Lock()
+def catalog_stamp():
+    return tuple((str(p.relative_to(ROOT)),p.stat().st_mtime_ns,p.stat().st_size) for folder in ('chars','classification','adult/oc') for p in sorted((ROOT/folder).glob('*.json'))) + ((ROOT/'adult/gen/works.jsonl').stat().st_mtime_ns if (ROOT/'adult/gen/works.jsonl').exists() else 0,)
+
 
 def read(path,default):
     try: return json.loads(path.read_text())
@@ -25,6 +31,21 @@ def chat_js(): return send_file(ROOT/'chat.js',max_age=0)
 
 @bp.get('/discover/api/characters')
 def characters():
+    adult=request.args.get('adult')=='1' and request.cookies.get('oc_adult')=='1'
+    cards=request.args.get('view')=='cards'
+    stamp=catalog_stamp(); cache_key=(adult,cards)
+    with _catalog_lock:
+        cached=_catalog_cache.get(cache_key)
+        if cached and cached[0]==stamp:return jsonify(characters=cached[1])
+        response=build_characters()
+        rows=response.get_json()['characters']
+        if cards:
+            fields={'id','name','img','category','type','role','summary','classification','adult_only','nsfw_cover'}
+            rows=[{k:v for k,v in row.items() if k in fields} for row in rows]
+        _catalog_cache[cache_key]=(stamp,rows)
+        return jsonify(characters=rows)
+
+def build_characters():
     covers={}
     path=ROOT/'adult/gen/works.jsonl'
     if path.exists():
