@@ -2,6 +2,7 @@
 import base64,hashlib,io,json,os,time,uuid,re
 from pathlib import Path
 from PIL import Image,UnidentifiedImageError
+from card_text import clean_data
 from flask import Blueprint,request,jsonify
 ROOT=Path(__file__).resolve().parent
 bp=Blueprint('tavern',__name__)
@@ -27,6 +28,7 @@ def decode_card(raw):
     return card,data,out.getvalue()
 
 def profile_from_card(data):
+    data=clean_data(data)
     # 将源文件中英文字段拆入统一档案，不推测缺失的年龄与经历。
     aliases={
       '名字':['name','姓名','名字'], '年龄感':['age','年龄','年龄感'],
@@ -119,6 +121,7 @@ def import_card():
         try:c=json.loads(p.read_text())
         except (ValueError,OSError):continue
         if c.get('tavern_import_hash')==digest:return jsonify(id=c['id'],name=c['name'],duplicate=True)
+    data=clean_data(data)
     cid=uuid.uuid4().hex[:10];src='u/'+cid+'_tavern.png'
     rp={k:data.get(k,'') for k in ('description','personality','scenario','first_mes','mes_example')}
     c=dict(id=cid,name=data['name'].strip(),img=src,images=[src],type='其他',age='不详',gender='不详',role='导入角色',traits=[],bio=data.get('description','')[:140],lore=data.get('description',''),created=time.strftime('%Y-%m-%d %H:%M'),works=[],roleplay=rp,tavern_card=card,tavern_import_hash=digest,profile=profile_from_card(data))
