@@ -1,5 +1,5 @@
 # 发现页只读取已有角色和素材；浏览不触发生图或角色档案补写。
-import json, os, threading, re
+import json, os, threading, re, hashlib
 from pathlib import Path
 from flask import Blueprint, jsonify, send_file, request
 import character_taxonomy as taxonomy
@@ -44,16 +44,29 @@ def characters():
     if request.args.get('cid'):
         return build_characters()
     adult=request.args.get('adult')=='1' and request.cookies.get('oc_adult')=='1'
-    cards=request.args.get('view')=='cards'
-    stamp=catalog_stamp(); cache_key=(adult,cards)
+    view=request.args.get('view','')
+    cards=view in ('cards','chat')
+    stamp=catalog_stamp(); cache_key=(adult,view)
+    fingerprint=hashlib.sha256(repr(stamp).encode()).hexdigest()
+    disk=ROOT/'catalog_cache'/('adult' if adult else 'safe')
+    disk=disk.with_name(disk.name+'-'+('chat' if view=='chat' else 'cards' if cards else 'full')+'.json')
     with _catalog_lock:
         cached=_catalog_cache.get(cache_key)
         if cached and cached[0]==stamp:return jsonify(characters=cached[1])
+        saved=read(disk,{})
+        if saved.get('stamp')==fingerprint:
+            _catalog_cache[cache_key]=(stamp,saved['rows'])
+            return jsonify(characters=saved['rows'])
         response=build_characters()
         rows=response.get_json()['characters']
         if cards:
             fields={'id','name','img','category','type','role','summary','classification','adult_only','nsfw_cover','opening'}
             rows=[{k:v for k,v in row.items() if k in fields} for row in rows]
+        if view=='chat':
+            rows=[{k:v for k,v in row.items() if k in ('id','name','img','role')} for row in rows]
+        from asset_store import write_json
+        disk.parent.mkdir(exist_ok=True)
+        write_json(disk,{'stamp':fingerprint,'rows':rows})
         _catalog_cache[cache_key]=(stamp,rows)
         return jsonify(characters=rows)
 
