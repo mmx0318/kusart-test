@@ -31,6 +31,8 @@ def chat_js(): return send_file(ROOT/'chat.js',max_age=0)
 
 @bp.get('/discover/api/characters')
 def characters():
+    if request.args.get('cid'):
+        return build_characters()
     adult=request.args.get('adult')=='1' and request.cookies.get('oc_adult')=='1'
     cards=request.args.get('view')=='cards'
     stamp=catalog_stamp(); cache_key=(adult,cards)
@@ -55,7 +57,9 @@ def build_characters():
             if w.get('cid') and w.get('src'): covers[str(w['cid'])]=w['src']
     include_adult=request.args.get('adult')=='1' and request.cookies.get('oc_adult')=='1'
     rows=[]
-    for path in sorted((ROOT/'chars').glob('*.json'),key=lambda p:p.stat().st_mtime,reverse=True):
+    requested=request.args.get('cid','')
+    paths=[ROOT/'chars'/(requested+'.json')] if requested and requested==os.path.basename(requested) else list((ROOT/'chars').glob('*.json'))
+    for path in sorted((p for p in paths if p.exists()),key=lambda p:p.stat().st_mtime,reverse=True):
         c=read(path,{})
         if not c.get('id'): continue
         classification=taxonomy.read(c)
