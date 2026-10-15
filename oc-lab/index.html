@@ -51,7 +51,7 @@ B[0]=()=>{$$('.tp[data-v]').forEach(b=>b.onclick=()=>{S.type=b.dataset.v;S.custo
  // 10-09 木木夕：自定义改成底部弹层（不再在卡片下面展开输入框），会员功能
  // 10-10 木木夕：自定义不用弹层了 → 进一个页面依次选 性别 → 年龄段 → 物种，再进 tag 页（补充描述 / 参考图在 tag 页的「想再补充点什么」里）
  $('#cus').onclick=()=>vipGate('自定义角色',()=>{$('.tsel').classList.add('picked');$('#cus').classList.add('sel');setTimeout(()=>go(0.5),250)});
- api('chars').then(cs=>{if(!cs.length)return;$('#mineBox').innerHTML=`<section class="char-gallery" aria-labelledby="char-gallery-title"><div class="char-gallery-head"><div><h2 id="char-gallery-title">大家创造的角色</h2><p>逛逛角色画廊，点开任意角色看看 TA 的故事</p></div><span class="char-gallery-count">${cs.length} 个角色</span></div><div class="mine">${cs.map(c=>`<a class="mine-card" href="c/${c.id}" target="_blank" aria-label="查看角色：${esc(c.name)}"><div class="mine-art"><img src="${esc(c.img)}" alt="${esc(c.name)}" loading="lazy"></div><span class="mine-name">${esc(c.name)}</span></a>`).join('')}</div></section>`}).catch(()=>{})};
+ api('chars').then(cs=>{if(!cs.length)return;$('#mineBox').innerHTML=`<section class="char-gallery" aria-labelledby="char-gallery-title"><div class="char-gallery-head"><div><h2 id="char-gallery-title">大家创造的角色</h2><p>逛逛角色画廊，点开任意角色看看 角色 的故事</p></div><span class="char-gallery-count">${cs.length} 个角色</span></div><div class="mine">${cs.map(c=>`<a class="mine-card" href="c/${c.id}" target="_blank" aria-label="查看角色：${esc(c.name)}"><div class="mine-art"><img src="${esc(c.img)}" alt="${esc(c.name)}" loading="lazy"></div><span class="mine-name">${esc(c.name)}</span></a>`).join('')}</div></section>`}).catch(()=>{})};
 
 /* 2 画风 */
 const STYC={};let STY=null;
@@ -195,7 +195,7 @@ R[3]=()=>head(3)+`${H("选出","心动","的那一张")}<div class="sub">${S.ima
 <div class="dbg">描述：${esc(S.desc)}<br>${S.dbg||''}</div>
 <div class="cta"><button class="btn" id="ok">就是这张</button></div>
 <div class="lbx" id="lbx"><div class="lbin"><img id="lbi"><div class="pline" id="lbl"></div><div class="lbbtn"><button class="btn2" id="lbc">关闭</button><button class="btn" id="lbo">就是这张</button></div></div></div>`+
-note('10-09 木木夕：4 张候选和画风卡一样平铺展示（原比例不裁），点图 = 选中 + 打开大图预览，预览里可以直接「就选 TA 了」；手机端底部主按钮固定在屏幕下方。真实出图：同一个提示词一次出 4 张，台词是 Kimi 写提示词时顺手写的 4 句。「重新生成」= 同描述再出 4 张。');
+note('10-09 木木夕：4 张候选和画风卡一样平铺展示（原比例不裁），点图 = 选中 + 打开大图预览，预览里可以直接「就选 角色 了」；手机端底部主按钮固定在屏幕下方。真实出图：同一个提示词一次出 4 张，台词是 Kimi 写提示词时顺手写的 4 句。「重新生成」= 同描述再出 4 张。');
 B[3]=()=>{const sel=k=>{S.pick=k;S.prof=null;S.cut=null;libApply(k);$$('.pk').forEach(x=>x.classList.toggle('sel',+x.dataset.k===k));$('#bb').textContent='「'+(S.lines[k]||'')+'」'};
  const lb=$('#lbx'),open=k=>{$('#lbi').src=S.images[k];$('#lbl').textContent='「'+(S.lines[k]||'')+'」';lb.classList.add('on')};
  $$('.pk').forEach(p=>p.onclick=()=>{const k=+p.dataset.k;sel(k);open(k)});
