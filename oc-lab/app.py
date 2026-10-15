@@ -436,7 +436,8 @@ def api_chars():
   out=[]
   for f in sorted(os.listdir(os.path.join(HERE,'chars')),key=lambda f:-os.path.getmtime(os.path.join(HERE,'chars',f)))[:60]:
     c=json.load(open(os.path.join(HERE,'chars',f)))
-    if c.get('adult_album_type'): continue
+    from character_taxonomy import read as read_classification
+    if read_classification(c)['rating']!='safe': continue
     out.append(dict(id=c['id'],name=c.get('name'),img=c.get('img'),cutout=(c.get('cutout') or {}).get('src'),created=c.get('created')))
   return jsonify(out)
 @app.get('/c/<cid>')
