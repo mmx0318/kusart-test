@@ -57,7 +57,7 @@ function requestMedia(kind,request=''){
 function renderMediaRequest(){
  const confirmation=$('#snapshotConfirm');confirmation.hidden=true;confirmation.innerHTML='';
  const req=mediaRequests.get(cid);if(!req)return;const c=current();
- if(req.kind==='snapshot'){confirmation.hidden=false;confirmation.innerHTML='<span>记录这一幕 · 10 演示积分</span><button type="button" data-snapshot-confirm>记录</button><button type="button" data-snapshot-cancel>取消</button>';confirmation.querySelector('[data-snapshot-confirm]').onclick=()=>simulateMedia(cid,req);confirmation.querySelector('[data-snapshot-cancel]').onclick=()=>{mediaRequests.delete(cid);renderMediaRequest()};return}
+ if(req.kind==='snapshot'){confirmation.hidden=false;confirmation.innerHTML='<span>剧情快照 · 16:9 · 真实生成与计费待接通</span><button type="button" data-snapshot-cancel>关闭</button>';confirmation.querySelector('[data-snapshot-cancel]').onclick=()=>{mediaRequests.delete(cid);renderMediaRequest()};return}
  const box=document.createElement('div');box.className='chat-line assistant media-request-line';
  box.innerHTML=`<img class="message-avatar" src="${esc(c.img)}" alt=""><div class="chat-message media-request-card"><b>让 ${esc(c.name)} ${req.kind==='video'?'发段视频':'发张照片'}</b><p>${req.request?esc(req.request):'根据当前聊天情境，记录这一刻。'}</p><details><summary>补充要求（可选）</summary><textarea rows="2" maxlength="400" aria-label="补充画面要求" placeholder="例如：眨一下眼">${esc(req.request)}</textarea></details><div class="media-request-actions"><button type="button" data-media-cancel>取消</button><button type="button" data-media-confirm>确认 · ${req.kind==='video'?50:10} 演示积分</button></div><small>演示余额：${demoBalance()} 积分。仅模拟扣除，不扣真实积分；素材复用已有图片或动态。</small></div>`;
  box.querySelector('textarea').oninput=e=>{req.request=e.target.value};
@@ -95,7 +95,7 @@ function simulateMedia(target,request){
 }
 const resetDemo=document.createElement('button');resetDemo.type='button';resetDemo.className='reset-chat';resetDemo.textContent='重置媒体演示积分（1000）';resetDemo.onclick=()=>{localStorage.setItem('oc-media-demo-balance','1000');resetDemo.textContent='演示积分已重置为1000';if(mediaRequests.has(cid))render()};$('#chatSettings').appendChild(resetDemo);
 // 剧情快照是用户的场景记录，不作为角色台词送给模型。
-function snapshotMarkup(m){return `<section class="story-snapshot"><small>剧情快照 · 演示</small><p>${esc(m.content)}</p>${m.asset?`<a href="${esc(m.asset.src)}" target="_blank" rel="noopener"><img src="${esc(m.asset.src)}" loading="lazy" alt="剧情快照演示素材"></a>`:'<span class="snapshot-wait" role="status">正在记录这一幕…</span>'}${m.scene?`<details><summary>回看这一幕</summary><p>${esc(m.scene)}</p></details>`:''}</section>`}
+function snapshotMarkup(m){return `<section class="story-snapshot"><small>${m.demoMedia?'剧情快照 · 旧演示素材':'剧情快照'}</small><p>${esc(m.content)}</p>${m.asset?`<a href="${esc(m.asset.src)}" target="_blank" rel="noopener"><img src="${esc(m.asset.src)}" loading="lazy" alt="剧情快照演示素材"></a>`:'<span class="snapshot-wait" role="status">正在记录这一幕…</span>'}${m.scene?`<details><summary>回看这一幕</summary><p>${esc(m.scene)}</p></details>`:''}</section>`}
 function requestSnapshot(index){
  const s=session(cid),m=s.messages[index];if(!m||m.role!=='assistant'||m.demoMedia||!m.content)return;
  requestMedia('snapshot',m.content);
@@ -103,7 +103,7 @@ function requestSnapshot(index){
 }
 function snapshotLibrary(){
  if(!cid)return;const rows=session(cid).messages.filter(m=>m.snapshot&&m.asset);
- const d=document.createElement('dialog');d.className='snapshot-library';d.innerHTML=`<button class="snapshot-close" type="button" aria-label="关闭">×</button><h2>剧情快照</h2><p class="snapshot-demo-note">演示模式：展示已有角色立绘，不代表已生成对应场景。</p><div>${rows.length?rows.map(snapshotMarkup).reverse().join(''):'<p>还没有快照。在喜欢的角色回复旁点“记录这一幕”。</p>'}</div>`;document.body.appendChild(d);d.querySelector('.snapshot-close').onclick=()=>d.close();d.addEventListener('close',()=>d.remove());d.showModal();
+ const d=document.createElement('dialog');d.className='snapshot-library';d.innerHTML=`<button class="snapshot-close" type="button" aria-label="关闭">×</button><h2>剧情快照</h2><p class="snapshot-demo-note">旧演示记录使用角色立绘；真实剧情快照将按当前剧情生成横版插图。</p><div>${rows.length?rows.map(snapshotMarkup).reverse().join(''):'<p>还没有快照。在喜欢的角色回复旁点“记录这一幕”。</p>'}</div>`;document.body.appendChild(d);d.querySelector('.snapshot-close').onclick=()=>d.close();d.addEventListener('close',()=>d.remove());d.showModal();
 }
 const libraryButton=document.createElement('button');libraryButton.type='button';libraryButton.className='roleplay-entry';libraryButton.textContent='剧情快照';libraryButton.onclick=snapshotLibrary;$('#viewRoleplay').after(libraryButton);
 
