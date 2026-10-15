@@ -121,12 +121,13 @@ function openFortune(){const B=overlay('今日运势');
  idle()}
 
 /* ===== 3. 角色出场 PV ===== */
-function openPV(){const B=overlay('出场 PV');const old=(C.works||[]).find(w=>w.kind==='pv');
+async function openPV(){const B=overlay('出场 PV');const old=(C.works||[]).find(w=>w.kind==='pv');let templates=[];try{templates=(await fetch(U('api/play/pv/templates')).then(r=>r.json())).templates||[]}catch(e){B.textContent='模板加载失败，请重新打开';return}let selected=templates[0]?.id||'t04';
  B.innerHTML=`<div class="pl-res">${old?`<video src="${U(old.src)}" controls playsinline></video><p class="pl-note">上一次生成的 PV</p>`:`<img src="${U((C.cutout||{}).src||C.img)}" style="max-height:40vh;background:none">`}</div>
- <div class="pl-conf">Mari 会按 ${E(C.name)} 的名字、称号和设定，自动填好 PV 里的字卡（名字、状态、招式），套用「角色登场」模板生成：<br>· 15 秒 · 13 个镜头 · 横屏 768P · 带配乐<br>· 大约 1～2 分钟出片</div>
+ <p class="pl-note">先看案例，再选喜欢的出场方式。案例角色仅演示镜头效果，生成时使用当前角色。</p><div class="pv-template-grid">${templates.map((t,i)=>`<div class="pv-template ${i?'':'selected'}" data-pv="${E(t.id)}">${t.sample?`<video src="${U(t.sample)}" controls playsinline preload="none"></video>`:'<div class="pv-template-placeholder">游戏式角色登场</div>'}<button type="button"><b>${E(t.name)}</b><small>${E(t.family)} · ${t.duration}秒 · ${E(t.ratio)}</small></button></div>`).join('')}</div>
  <div class="pl-btns"><button class="pl-btn p" id="mk">${old?'再生成一条':'生成出场 PV'}</button></div><p class="pl-note">视频生成成本较高，测试站请勿连续点</p>`;
+ B.querySelectorAll('[data-pv] button').forEach(btn=>btn.onclick=()=>{selected=btn.parentElement.dataset.pv;B.querySelectorAll('[data-pv]').forEach(el=>el.classList.toggle('selected',el.dataset.pv===selected))});
  B.querySelector('#mk').onclick=async()=>{if(!confirm('确定生成一条出场 PV 吗？视频成本较高，约 1～2 分钟。'))return;const box=document.createElement('div');box.className='pl-res';B.innerHTML='';B.appendChild(box);
-  try{const {job}=await post('play/pv/make',{cid:CID});const j=await runJob(job,box,'Mari 正在写分镜字卡',90);
+  try{const {job}=await post('play/pv/make',{cid:CID,template_id:selected});const j=await runJob(job,box,'Mari 正在写分镜字卡',90);
    box.innerHTML=`<video src="${U(j.src)}" controls autoplay playsinline></video><div class="pl-rate" style="margin-top:10px">${E([j.params.CHARACTER_NAME,j.params.STATUS_TEXT_1,j.params.STATUS_TEXT_2].filter(Boolean).join(' · '))}</div>`;
    addWork({kind:'pv',src:j.src,title:'出场 PV'});B.insertAdjacentHTML('beforeend',`<div class="pl-btns"><a class="pl-btn" style="display:flex;align-items:center;justify-content:center;text-decoration:none" href="${U(j.src)}" download>保存视频</a></div>`)}
   catch(e){box.innerHTML=`<p class="pl-note" style="color:#ff9b9b">${E(e.message)}</p>`}}}

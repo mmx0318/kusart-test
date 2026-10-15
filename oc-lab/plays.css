@@ -213,3 +213,5 @@
 
 /* 角色主页创作入口：内容居中并按文字自适应，避免继承抽卡按钮伸展。 */
 .pl-create-link{display:inline-flex;align-items:center;justify-content:center;gap:8px;flex:none;height:auto;min-height:48px;max-width:100%;padding:12px 24px;margin:10px 0 22px;line-height:1.5;text-align:center;text-decoration:none;background:var(--ui-pink,#e83e7e);color:#fff;white-space:normal;overflow-wrap:anywhere}.pl-create-link:hover{background:var(--ui-pink-hover,#f05290)}
+
+.pv-template-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;width:100%;margin:16px 0}.pv-template{border:1px solid #353744;border-radius:14px;overflow:hidden;background:#191b24}.pv-template.selected{border-color:#e83e7e;box-shadow:0 0 0 1px #e83e7e}.pv-template video{width:100%;height:150px;object-fit:contain;background:#101117;display:block}.pv-template button{display:block;width:100%;padding:12px;text-align:left;background:none;border:0;color:white;cursor:pointer}.pv-template small{display:block;color:#aba6b4;margin-top:5px}.pv-template-placeholder{height:150px;display:grid;place-items:center;background:#232530;color:#f08bad}.pv-template-grid~.pl-btns{flex:none}

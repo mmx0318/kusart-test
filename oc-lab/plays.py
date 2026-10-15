@@ -211,16 +211,29 @@ def pv_params(c):
     'INTERSTITIAL_TEXT_1~3 = 三张招式/特质卡（每张 ≤16 字符，可以是能力名、口头禅、标志物）；SUBTITLE=一句副标题（≤24 字符）。'
     'ability 用中文写角色最标志的能力或气质（12~30 字），环境与特效会围绕它展开；日常系角色就写日常里的标志动作和氛围。不要出现任何真实作品、品牌和名人的名字。',
     json.dumps({k:c.get(k) for k in ('name','type','role','traits','bio','desc','lore')}|{k:p.get(k) for k in ('epithet','world','summary','hook')},ensure_ascii=False))
-def pv_make(j,cid,params=None):
+def pv_make(j,cid,params=None,template_id='t04'):
   _,c=char(cid); j['phase']='写分镜参数'; pr=params or pv_params(c)
   txt=T04
   for k in ('CHARACTER_NAME','STATUS_TEXT_1','STATUS_TEXT_2','INTERSTITIAL_TEXT_1','INTERSTITIAL_TEXT_2','INTERSTITIAL_TEXT_3','SUBTITLE'):
     txt=txt.replace('{'+k+'}',str(pr.get(k,'')).upper().replace('"',''))
   txt=txt.replace('{PROJECT_TEXT}','')   # 模型分不清副标题和 PROJECT_TEXT，会渲染两遍 → 留空
   txt=txt.replace('{角色中文名}',c.get('name') or '').replace('{作品}','KusArt 原创角色').replace('{标志能力}',pr.get('ability') or (c.get('role') or ''))
+  selected=None
+  if template_id!='t04':
+    selected=next((t for t in pv_catalog() if t['id']==template_id),None)
+    if not selected: raise ValueError('模板不存在')
+    variants=selected['variants'];preferred='male' if c.get('gender')=='男' else 'female'
+    key=next((k for k in variants if ('furry' in k if c.get('type')=='Furry' else k==preferred)),next(iter(variants)))
+    v=variants[key]
+    values=A.llm('为原创角色视频模板填槽。只输出JSON：{"vals":["按槽位顺序的字符串"]}。不得引用其他IP；name填当前角色名，work填原创世界，const填空，其余按前后分镜语义填写场景、配色、动作与性格。参考图锁定角色外观，不得更换角色或服装。',json.dumps({'角色':{k:c.get(k) for k in ('name','role','traits','bio','lore')},'片段':v['frags'],'槽位':v['slots']},ensure_ascii=False)).get('vals')
+    if not isinstance(values,list) or len(values)!=len(v['frags'])+1: raise ValueError('模板参数不完整，请重试')
+    txt=''.join(str(values[i])+frag for i,frag in enumerate(v['frags']))+str(values[-1])
+    pr['template_id']=template_id;pr['template_name']=selected['name']
+  duration=selected['duration'] if selected else 15
+  ratio=selected['ratio'] if selected else '16:9'
   j['phase']='上传立绘'; url=public_url(c)
   body={"model":"MiniMax-H3-max","content":[{"type":"text","text":txt},{"type":"image_url","role":"reference_image","image_url":{"url":url}}],
-        "resolution":"768P","duration":15,"ratio":"16:9","aigc_watermark":False}
+        "resolution":"768P","duration":duration,"ratio":ratio,"aigc_watermark":False}
   hd={'Authorization':'Bearer '+H3K(),'Content-Type':'application/json'}
   j['phase']='排队生成'; tid=None
   for k in range(3):
@@ -237,15 +250,17 @@ def pv_make(j,cid,params=None):
     t=q.get('task') or {}; s=str(t.get('status','')).lower()
     if s=='succeeded':
       v=requests.get(t['content']['url'],timeout=300).content; fn=f'u/{cid}_pv_{int(time.time())}.mp4'; open(os.path.join(HERE,fn),'wb').write(v)
-      rc=dict(play='pv',play_name='出场 PV',character=char_ref(c,cid),model=dict(name='MiniMax-H3-max',api='api.minimax.io v2/video_generation',mode='reference_image',resolution='768P',duration=15,ratio='16:9'),
-              prompt=txt,template='H3-max T04（plays/t04_skeleton.txt）',inputs=[dict(role='参考图',src=url)],params=pr,
+      rc=dict(play='pv',play_name='出场 PV',character=char_ref(c,cid),model=dict(name='MiniMax-H3-max',api='api.minimax.io v2/video_generation',mode='reference_image',resolution='768P',duration=duration,ratio=ratio),
+              prompt=txt,template=selected['name'] if selected else 'H3-max T04（plays/t04_skeleton.txt）',inputs=[dict(role='参考图',src=url)],params=pr,
               text_model=dict(name=A.KIMI,api='OpenRouter',use='填 T04 字卡参数'),task_id=tid)
       add_work(cid,dict(kind='pv',src=fn,title='出场 PV',params=pr,recipe=rc)); return dict(src=fn,params=pr)
     if s in ('failed','cancelled'): raise RuntimeError('视频生成失败：'+str(t.get('error'))[:200])
   raise RuntimeError('视频生成超时')
 @bp.post('/api/play/pv/make')
 def pv_make_api():
-  d=request.json; char(d['cid']); return jsonify(job=job('pv',d['cid'],pv_make,d['cid']))
+  d=request.json; char(d['cid']); template_id=d.get('template_id','t04')
+  if template_id not in ['t04']+[t['id'] for t in pv_catalog()]: return jsonify(error='模板不存在'),400
+  return jsonify(job=job('pv',d['cid'],pv_make,d['cid'],None,template_id))
 
 @bp.get('/api/play/recipes')
 def recipes():
@@ -267,3 +282,17 @@ def plays_js():
 @bp.get('/plays.css')
 def plays_css():
   from flask import send_file; return send_file(os.path.join(HERE,'plays.css'),max_age=0)
+
+# 已归档样片按需播放，模板骨架只留在服务端。
+def pv_catalog():
+  p=os.path.join(HERE,'plays','pv_catalog.json')
+  return json.load(open(p)) if os.path.exists(p) else []
+@bp.get('/api/play/pv/templates')
+def pv_templates():
+  return jsonify(templates=[dict(id='t04',name='游戏角色登场',family='字卡快剪',duration=15,ratio='16:9',sample=None)]+[{k:t[k] for k in ('id','name','family','duration','ratio','sample')} for t in pv_catalog()])
+@bp.get('/plays/pv_samples/<name>')
+def pv_sample(name):
+  from flask import send_file
+  p=os.path.join(HERE,'plays','pv_samples',os.path.basename(name))
+  if not os.path.isfile(p):abort(404)
+  return send_file(p,conditional=True,max_age=3600)
