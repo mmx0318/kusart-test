@@ -14,9 +14,31 @@ status.textContent=filtered.length+' 个角色'+(adult.checked?' · 成人区':'
 async function load(){const seq=++loadSeq;status.textContent='正在加载角色…';try{const r=await fetch('discover/api/characters'+(adult.checked?'?adult=1':''),{cache:'no-store'});if(r.status===401){location.href='login';return}if(!r.ok)throw Error('角色加载失败');const data=await r.json();if(seq!==loadSeq)return;characters=data.characters;draw()}catch(e){status.textContent=e.message}}
 function strip(id,options,set){const box=document.getElementById(id);box.innerHTML=['全部',...options].map(x=>`<button type="button" data-value="${esc(x)}" class="${x==='全部'?'active':''}">${esc(x==='近亲关系'?'近亲关系':x)}</button>`).join('');box.onclick=e=>{const b=e.target.closest('button');if(!b)return;box.querySelectorAll('button').forEach(x=>x.classList.toggle('active',x===b));set(b.dataset.value);draw()}}
 strip('audiences',AUD,v=>audience=v);strip('relations',REL,v=>relation=v);strip('themes',THEMES,v=>theme=v);
-function preferenceDialog(){const dlg=document.createElement('dialog');dlg.className='preference-dialog';const group=(key,title,items)=>`<fieldset><legend>${title}</legend><div>${items.map(v=>`<label><input type="checkbox" name="${key}" value="${esc(v)}" ${(prefs[key]||[]).includes(v)?'checked':''}>${esc(v)}</label>`).join('')}</div></fieldset>`;
-dlg.innerHTML=`<form method="dialog"><h2>想遇见什么样的角色？</h2><p>可多选，也可以跳过；偏好仅保存在当前浏览器，随时能改。</p>${group('audiences','面向偏好',AUD)}${group('relations','关系类型',REL)}${group('themes','喜欢的剧情',THEMES)}${group('avoid','不想看到的标签',REL.concat(THEMES))}<p>关系类型按原卡设定分类；CB 暂只识别原卡明确标注。</p><div class="preference-actions"><button value="skip">先随便看看</button><button value="save">保存偏好</button></div></form>`;
-dlg.addEventListener('close',()=>{if(dlg.returnValue==='save'){for(const k of ['audiences','relations','themes','avoid'])prefs[k]=[...dlg.querySelectorAll(`input[name="${k}"]:checked`)].map(x=>x.value)}prefs.done=true;store();dlg.remove();draw()});document.body.appendChild(dlg);dlg.showModal();}
+function preferenceDialog(){
+ const dlg=document.createElement('dialog');dlg.className='preference-dialog preference-wizard';
+ const draft={audiences:[...(prefs.audiences||[])],relations:[...(prefs.relations||[])],themes:[...(prefs.themes||[])],avoid:[...(prefs.avoid||[])]};
+ let step=0,moreRelations=false,tab='themes',saved=false;
+ const descriptions={BL:'男生与男生',GL:'女生与女生',BG:'男生与女生',GB:'女方主导的男女关系',无CP:'不以恋爱关系为主'};
+ const choice=(key,v,small='')=>`<button type="button" class="preference-choice ${draft[key].includes(v)?'chosen':''}" data-key="${key}" data-choice="${esc(v)}" aria-pressed="${draft[key].includes(v)}"><span>${esc(v)}</span>${small?`<small>${esc(small)}</small>`:''}</button>`;
+ const finish=()=>{prefs={...prefs,...draft,done:true};store();saved=true;dlg.close();draw()};
+ function paint(){
+  const heading=step===0?'先选一个喜欢的方向':step===1?'更喜欢哪种关系？':'再挑一点偏好';
+  const hint=step===0?'选喜欢的就好，也可以不限。':step===1?'可以多选，也可以直接开始浏览。':'这些都可以以后再改。';
+  let content='';
+  if(step===0)content=`<div class="preference-direction">${AUD.map(v=>choice('audiences',v)).join('')}</div>`;
+  else if(step===1)content=`<div class="preference-relationship">${(moreRelations?REL:REL.slice(0,4)).map(v=>choice('relations',v,descriptions[v]||'')).join('')}</div><button type="button" class="preference-link" data-action="expand">${moreRelations?'收起':'更多关系'}</button>`;
+  else content=`<div class="preference-tabs"><button type="button" data-tab="themes" aria-pressed="${tab==='themes'}">喜欢的剧情</button><button type="button" data-tab="avoid" aria-pressed="${tab==='avoid'}">不想看到</button></div><div class="preference-chips">${[...new Set(tab==='themes'?THEMES:REL.concat(THEMES))].map(v=>choice(tab,v)).join('')}</div>`;
+  dlg.innerHTML=`<div class="preference-top"><span>${step===2?'更多偏好':`${step+1} / 2`}</span><button type="button" data-action="close" aria-label="关闭偏好选择">×</button></div><h2>${heading}</h2><p>${hint}</p>${content}<div class="preference-actions">${step===0?'<button type="button" data-action="skip">跳过</button><button type="button" data-action="next">下一步</button>':step===1?'<button type="button" data-action="back">上一步</button><button type="button" data-action="done">开始浏览</button>':'<button type="button" data-action="back">返回</button><button type="button" data-action="done">保存偏好</button>'}</div>${step===1?'<button type="button" class="preference-link preference-more" data-action="more">更多偏好 · 剧情与避开标签</button>':''}`;
+ }
+ dlg.addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.choice){const key=b.dataset.key,v=b.dataset.choice;draft[key]=draft[key].includes(v)?draft[key].filter(x=>x!==v):[...draft[key],v];if(key==='audiences'){if(v==='不限'&&draft[key].includes(v))draft[key]=['不限'];else if(v!=='不限')draft[key]=draft[key].filter(x=>x!=='不限')}paint();return}
+  if(b.dataset.tab){tab=b.dataset.tab;paint();return}
+  switch(b.dataset.action){case 'close':dlg.close();return;case 'next':case 'skip':step=1;break;case 'back':step=Math.max(0,step-1);break;case 'more':step=2;break;case 'expand':moreRelations=!moreRelations;break;case 'done':finish();return}paint();
+ });
+ dlg.addEventListener('close',()=>{if(!saved){prefs.done=true;store()}dlg.remove()});
+ document.body.appendChild(dlg);paint();dlg.showModal();
+}
 async function enableAdult(){const dlg=document.createElement('dialog');dlg.className='preference-dialog';dlg.innerHTML='<form method="dialog"><h2>进入成人角色区</h2><p>此处包含 NSFW 角色卡。确认你已年满18岁，并愿意查看成人内容。</p><div class="preference-actions"><button value="cancel">取消</button><button value="confirm">已满18岁，继续</button></div></form>';document.body.appendChild(dlg);dlg.showModal();const confirmed=await new Promise(resolve=>dlg.addEventListener('close',()=>resolve(dlg.returnValue==='confirm'),{once:true}));dlg.remove();if(!confirmed)return false;const r=await fetch('discover/api/adult-access',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({confirmed:true})});return r.ok}
 search.oninput=draw;
 adult.onchange=async()=>{adult.disabled=true;try{if(adult.checked&&!(await enableAdult()))adult.checked=false;if(!adult.checked)await fetch('discover/api/adult-access',{method:'POST',headers:{'Content-Type':'application/json'},body:'{"confirmed":false}'});await load()}finally{adult.disabled=false}};
