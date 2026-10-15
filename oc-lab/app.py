@@ -524,4 +524,5 @@ import tavern; app.register_blueprint(tavern.bp)
 import demo; demo.init(_sys.modules[__name__]); app.register_blueprint(demo.bp)   # demo：剧情工作台与角色聊天
 import worldbooks; app.register_blueprint(worldbooks.bp)
 import snapshots; app.register_blueprint(snapshots.bp)
+import snapshot_motion; app.register_blueprint(snapshot_motion.bp)
 if __name__=='__main__': app.run('127.0.0.1',8791,threaded=True)
