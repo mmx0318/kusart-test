@@ -1,5 +1,5 @@
 # 剧情快照执行器：参考立绘生成新画面；计费适配器未接入前禁止创建付费任务。
-import base64,io,json,time,uuid
+import base64,io,json,time,uuid,re
 from pathlib import Path
 import requests
 from flask import Blueprint,jsonify,request,send_file
@@ -47,7 +47,7 @@ def quote():
 
 @bp.post('/api/snapshots')
 def create_snapshot():
-    from worldbooks import char
+    from worldbooks import char,read
     import character_taxonomy as taxonomy
     d=request.get_json(silent=True) or {}
     if not isinstance(d,dict) or d.get('confirmed') is not True:return jsonify(error='请先确认真实生成费用'),400
@@ -55,6 +55,12 @@ def create_snapshot():
     if rating not in ('safe','nsfw'):return jsonify(error='角色尚未完成审核，暂不能生成'),403
     nsfw=rating=='nsfw'
     if nsfw and request.cookies.get('oc_adult')!='1':return jsonify(error='请先确认成年'),403
+    previous=d.get('regenerate')
+    if previous:
+        if not isinstance(previous,str) or not re.fullmatch(r'[a-f0-9]{32}',previous):return jsonify(error='快照不存在'),404
+        original=read(ROOT/'snapshot_data'/(previous+'.json'),None)
+        if not original or original.get('cid')!=c['id']:return jsonify(error='快照不属于当前角色'),400
+        d=dict(d,messages=original.get('messages'),state=original.get('state'))
     source=d.get('messages')
     if not isinstance(source,list) or not source or len(source)>100:return jsonify(error='缺少有效剧情'),400
     messages=[{'role':m.get('role'),'content':str(m.get('content') or '')[:6000]} for m in source if isinstance(m,dict) and m.get('role') in ('user','assistant')]
