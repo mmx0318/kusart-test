@@ -212,6 +212,9 @@ def pv_params(c):
     'ability 用中文写角色最标志的能力或气质（12~30 字），环境与特效会围绕它展开；日常系角色就写日常里的标志动作和氛围。不要出现任何真实作品、品牌和名人的名字。',
     json.dumps({k:c.get(k) for k in ('name','type','role','traits','bio','desc','lore')}|{k:p.get(k) for k in ('epithet','world','summary','hook')},ensure_ascii=False))
 def pv_make(j,cid,params=None,template_id='t04'):
+  if template_id=='lp':
+    import lp_animation,sys
+    return lp_animation.make(sys.modules[__name__],j,cid)
   _,c=char(cid); j['phase']='写分镜参数'; pr=params or pv_params(c)
   txt=T04
   for k in ('CHARACTER_NAME','STATUS_TEXT_1','STATUS_TEXT_2','INTERSTITIAL_TEXT_1','INTERSTITIAL_TEXT_2','INTERSTITIAL_TEXT_3','SUBTITLE'):
@@ -259,7 +262,7 @@ def pv_make(j,cid,params=None,template_id='t04'):
 @bp.post('/api/play/pv/make')
 def pv_make_api():
   d=request.json; char(d['cid']); template_id=d.get('template_id','t04')
-  if template_id not in ['t04']+[t['id'] for t in pv_catalog()]: return jsonify(error='模板不存在'),400
+  if template_id not in ['t04','lp']+[t['id'] for t in pv_catalog()]: return jsonify(error='模板不存在'),400
   return jsonify(job=job('pv',d['cid'],pv_make,d['cid'],None,template_id))
 
 @bp.get('/api/play/recipes')
@@ -289,7 +292,7 @@ def pv_catalog():
   return json.load(open(p)) if os.path.exists(p) else []
 @bp.get('/api/play/pv/templates')
 def pv_templates():
-  return jsonify(templates=[dict(id='t04',name='游戏角色登场',family='字卡快剪',duration=15,ratio='16:9',sample=None)]+[{k:t[k] for k in ('id','name','family','duration','ratio','sample')} for t in pv_catalog()])
+  return jsonify(templates=[dict(id='t04',name='游戏角色登场',family='字卡快剪',duration=15,ratio='16:9',sample=None),dict(id='lp',name='角色 LP 动画',family='剧情演出 · 落回角色卡 · 试用',duration=15,ratio='16:9',sample='plays/pv_samples/lp.mp4' if os.path.exists(os.path.join(HERE,'plays','pv_samples','lp.mp4')) else None)]+[{k:t[k] for k in ('id','name','family','duration','ratio','sample')} for t in pv_catalog()])
 @bp.get('/plays/pv_samples/<name>')
 def pv_sample(name):
   from flask import send_file
