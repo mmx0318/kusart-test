@@ -67,7 +67,8 @@ def profile_from_card(data):
     def short(value,limit=64):
         value=re.sub(r'\s+',' ',value).strip()
         return value if len(value)<=limit else value[:limit].rstrip('，,、;；')+'…'
-    identity=fields.get('身份','');personality=fields.get('性格','')
+    identity=fields.get('身份','');personality=re.sub(r'^(?:tags?|关键词|标签)\s*[:：]\s*','',fields.get('性格',''),flags=re.I)
+    if personality:fields['性格']=personality
     appearance='\n'.join(k+'：'+fields[k] for k in ('外貌','发型','瞳色','嘴唇','肤色','面容','特征','穿着') if fields.get(k))
     overview=[]
     if identity:overview.append((data.get('name') or '')+'，'+short(identity,70)+'。')
