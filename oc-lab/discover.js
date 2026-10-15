@@ -8,7 +8,7 @@ function store(){try{localStorage.setItem('oc-preferences-v1',JSON.stringify(pre
 function values(c,k){return c.classification?.[k]||[]}
 function tags(c){return [...values(c,'audiences'),...values(c,'relations'),...values(c,'themes')]}
 function score(c){return (prefs.audiences||[]).filter(v=>values(c,'audiences').includes(v)).length*4+(prefs.relations||[]).filter(v=>values(c,'relations').includes(v)).length*3+(prefs.themes||[]).filter(v=>values(c,'themes').includes(v)).length*2}
-function draw(){const q=search.value.trim().toLowerCase();const filtered=characters.filter(c=>(adult.checked?c.adult_only:!c.adult_only)&&(audience==='全部'||values(c,'audiences').includes(audience))&&(relation==='全部'||values(c,'relations').includes(relation))&&(theme==='全部'||values(c,'themes').includes(theme))&&!(prefs.avoid||[]).some(v=>tags(c).includes(v))&&[c.name,c.role,c.type,c.summary,...tags(c)].join(' ').toLowerCase().includes(q)).sort((a,b)=>score(b)-score(a));
+function draw(){const activeFilters=[audience,relation,theme].filter(x=>x!=='全部');const filterButton=document.getElementById('filterToggle');filterButton.textContent=activeFilters.length?'筛选 · '+activeFilters.length:'筛选 ▾';filterButton.title=activeFilters.join(' · ')||'展开分类筛选';const q=search.value.trim().toLowerCase();const filtered=characters.filter(c=>(adult.checked?c.adult_only:!c.adult_only)&&(audience==='全部'||values(c,'audiences').includes(audience))&&(relation==='全部'||values(c,'relations').includes(relation))&&(theme==='全部'||values(c,'themes').includes(theme))&&!(prefs.avoid||[]).some(v=>tags(c).includes(v))&&[c.name,c.role,c.type,c.summary,...tags(c)].join(' ').toLowerCase().includes(q)).sort((a,b)=>score(b)-score(a));
 document.getElementById('characterWall').innerHTML=filtered.map(c=>`<article class="discover-card"><a href="c/${encodeURIComponent(c.id)}"><img src="${esc(adult.checked?(c.nsfw_cover||c.img):c.img)}" alt="${esc(c.name)}" loading="lazy"><div class="card-caption"><b>${esc(c.name)}</b><small>${esc(tags(c).slice(0,4).join(' · ')||c.role||c.type||c.category)}</small></div></a><a class="card-chat" href="chat?cid=${encodeURIComponent(c.id)}" aria-label="和${esc(c.name)}聊天" title="和${esc(c.name)}聊天"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 0 1-9 9H3l2-5a9 9 0 1 1 16-4Z"/></svg></a></article>`).join('')||'<p class="discover-empty">暂时没有符合这些条件的角色。可以减少筛选，或稍后再看，更多角色正在分类。</p>';
 status.textContent=filtered.length+' 个角色'+(adult.checked?' · 成人区':' · 普通区')+(prefs.done?' · 按已选偏好排序':'')+' · 未完成分级的导入卡暂不展示';}
 async function load(){const seq=++loadSeq;status.textContent='正在加载角色…';try{const r=await fetch('discover/api/characters'+(adult.checked?'?adult=1':''),{cache:'no-store'});if(r.status===401){location.href='login';return}if(!r.ok)throw Error('角色加载失败');const data=await r.json();if(seq!==loadSeq)return;characters=data.characters;draw()}catch(e){status.textContent=e.message}}
@@ -45,3 +45,13 @@ adult.onchange=async()=>{adult.disabled=true;try{if(adult.checked&&!(await enabl
 
 document.getElementById('preferences').onclick=preferenceDialog;
 (async()=>{if(new URLSearchParams(location.search).get('adult')==='1'){adult.checked=await enableAdult()}await load();if(!prefs.done&&!adult.checked)preferenceDialog()})();
+
+// 标签默认收起，点击搜索框或筛选按钮才展开；收起不清空已选条件。
+const filterPanel=document.getElementById('searchFilters'),filterToggle=document.getElementById('filterToggle'),searchArea=document.querySelector('.discover-search');
+function showFilters(open){filterPanel.hidden=!open;filterToggle.setAttribute('aria-expanded',String(open));}
+filterToggle.onclick=()=>showFilters(filterPanel.hidden);
+search.addEventListener('click',()=>showFilters(true));
+document.getElementById('closeFilters').onclick=()=>{showFilters(false);filterToggle.focus()};
+document.getElementById('clearFilters').onclick=()=>{audience=relation=theme='全部';filterPanel.querySelectorAll('.category-strip').forEach(group=>group.querySelectorAll('button').forEach(b=>b.classList.toggle('active',b.dataset.value==='全部')));draw()};
+document.addEventListener('click',e=>{if(!searchArea.contains(e.target))showFilters(false)});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!filterPanel.hidden){showFilters(false);filterToggle.focus()}});
