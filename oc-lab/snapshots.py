@@ -127,3 +127,14 @@ def snapshot_job(jid):
     if not job:return jsonify(error='任务不存在'),404
     if job.get('nsfw') and request.cookies.get('oc_adult')!='1':return jsonify(error='请先确认成年'),403
     return jsonify(job)
+
+
+@bp.get('/u/snapshots/<name>')
+def snapshot_image(name):
+    # 仅开放快照图片，剧情原文和任务信息不通过静态目录暴露。
+    import re
+    from flask import abort
+    if not re.fullmatch(r'(?:[a-f0-9]{32}|example-gpt)\.png',name):abort(404)
+    path=ROOT/'u'/'snapshots'/name
+    if not path.is_file():abort(404)
+    return send_file(path,mimetype='image/png',max_age=3600)
