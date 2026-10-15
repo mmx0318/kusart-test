@@ -43,11 +43,35 @@ def render_snapshot(c,messages,state,nsfw=False):
 
 @bp.get('/api/snapshots/quote')
 def quote():
-    return jsonify(available=False,reason='真实剧情快照正在接入计费，暂未开放；不会扣除演示积分。',ratio='16:9',models={'normal':'GPT 2.5 · medium','nsfw':'Seedream 4.5 · 4K'})
+    return jsonify(available=True,reason='真实生图会产生费用，由测试站供应商账户承担；暂不扣用户积分。',ratio='16:9',models={'normal':'GPT 2.5 · medium','nsfw':'Seedream 4.5 · 4K'})
 
 @bp.post('/api/snapshots')
 def create_snapshot():
-    return jsonify(error='用户钱包和积分定价尚未接入，当前禁止创建收费任务。'),503
+    from worldbooks import char
+    import character_taxonomy as taxonomy
+    d=request.get_json(silent=True) or {}
+    if not isinstance(d,dict) or d.get('confirmed') is not True:return jsonify(error='请先确认真实生成费用'),400
+    c=char(d.get('cid'));rating=taxonomy.read(c).get('rating')
+    if rating not in ('safe','nsfw'):return jsonify(error='角色尚未完成审核，暂不能生成'),403
+    nsfw=rating=='nsfw'
+    if nsfw and request.cookies.get('oc_adult')!='1':return jsonify(error='请先确认成年'),403
+    source=d.get('messages')
+    if not isinstance(source,list) or not source or len(source)>100:return jsonify(error='缺少有效剧情'),400
+    messages=[{'role':m.get('role'),'content':str(m.get('content') or '')[:6000]} for m in source if isinstance(m,dict) and m.get('role') in ('user','assistant')]
+    if not messages or messages[-1]['role']!='assistant':return jsonify(error='请选择角色回复生成快照'),400
+    state=d.get('state') if isinstance(d.get('state'),dict) else {}
+    state={k:str(state.get(k) or '')[:600] for k in ('scene','mood','relationship')}
+    identity=json.dumps({'cid':c['id'],'messages':messages,'source':str(d.get('source') or '')[:160]},sort_keys=True,ensure_ascii=False)
+    jid=hashlib.sha256(identity.encode()).hexdigest()[:40]
+    with _JOB_LOCK:
+        existing=_job_read(jid)
+        if existing:return jsonify(existing)
+        active=sum(1 for p in _JOB_DIR.glob('*.json') if (json.loads(p.read_text()).get('status') in ('queued','running')))
+        if active>=2:return jsonify(error='当前有快照正在生成，请稍后再试'),429
+        job={'id':jid,'cid':c['id'],'nsfw':nsfw,'status':'queued','created':time.time()}
+        write_json(_JOB_DIR/(jid+'.json'),job)
+        demo.A.POOL.submit(_run_job,jid,c,messages,state,nsfw)
+    return jsonify(job),202
 
 
 @bp.get('/snapshots')
@@ -75,3 +99,31 @@ def gallery_data():
     rows.sort(key=lambda w:w.get('created') or 0,reverse=True)
     example={'title':'窗边的回应','scene':'书房 · 窗边','src':'u/snapshots/example-gpt.png','dialogue':'怎么，又捂上嘴了？','progress':'阿璃欲言又止，抬手掩住嘴。窗边的人侧过脸，等他回应。'} if not requested and (ROOT/'u/snapshots/example-gpt.png').exists() else None
     return jsonify(items=rows,example=example)
+
+# 测试站真实生成由已配置的供应商账户承担费用；不冒充用户钱包扣款。
+import hashlib,threading
+_JOB_LOCK=threading.Lock()
+_JOB_DIR=ROOT/'snapshot_jobs'
+_JOB_DIR.mkdir(exist_ok=True)
+
+def _job_read(jid):
+    from worldbooks import read
+    if not isinstance(jid,str) or len(jid)!=40 or any(c not in '0123456789abcdef' for c in jid):return None
+    return read(_JOB_DIR/(jid+'.json'),None)
+
+def _run_job(jid,c,messages,state,nsfw):
+    path=_JOB_DIR/(jid+'.json')
+    job=_job_read(jid);job.update(status='running',started=time.time());write_json(path,job)
+    try:
+        result=render_snapshot(c,messages,state,nsfw)
+        job.update(status='completed',result=result,completed=time.time())
+    except Exception:
+        job.update(status='failed',error='本次未能完成生成。请稍后查看或联系管理员；为避免重复费用，不会自动重新提交。')
+    write_json(path,job)
+
+@bp.get('/api/snapshots/jobs/<jid>')
+def snapshot_job(jid):
+    job=_job_read(jid)
+    if not job:return jsonify(error='任务不存在'),404
+    if job.get('nsfw') and request.cookies.get('oc_adult')!='1':return jsonify(error='请先确认成年'),403
+    return jsonify(job)
