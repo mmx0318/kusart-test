@@ -199,6 +199,7 @@ function render(c,all){
  mountAdult(c)
  const rp=document.getElementById('roleplayCard');
  rp.innerHTML=`<h2 class="text-2xl font-bold">互动人设</h2><p class="mt-2 text-sm text-white/50">性格、动机、说话方式与对话示例，供聊天使用。</p><details class="mt-4"><summary>查看／编辑人设</summary><textarea class="mt-3 w-full rounded-lg bg-white/5 p-4" rows="14"></textarea><div class="mt-3 flex gap-4"><button data-rp-save>保存修改</button><button data-rp-gen>${c.roleplay?'重新生成':'自动补全'}</button></div><p data-rp-status class="mt-2 text-sm"></p></details>`;
+ rp.insertAdjacentHTML('beforeend',`<a class="mt-4 inline-block text-sm text-pink-300" href="../worlds?cid=${encodeURIComponent(c.id)}">查看／编辑世界观与世界书 →</a>`);
  const ta=rp.querySelector('textarea'),status=rp.querySelector('[data-rp-status]');ta.value=JSON.stringify(c.roleplay||{},null,2);
  const update=async(method)=>{const buttons=rp.querySelectorAll('button');buttons.forEach(b=>b.disabled=true);status.textContent=method==='POST'?'正在补全人设…':'正在保存…';try{const body=method==='PUT'?{roleplay:JSON.parse(ta.value)}:{};const r=await fetch('../api/char/'+encodeURIComponent(c.id)+'/roleplay',{method,headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const out=await r.json();if(!r.ok)throw Error(out.error||'保存失败');c.roleplay=out.roleplay;ta.value=JSON.stringify(out.roleplay,null,2);status.textContent='已保存，下一轮聊天使用新设定。'}catch(e){status.textContent=e.message}finally{buttons.forEach(b=>b.disabled=false)}};
  rp.querySelector('[data-rp-save]').onclick=()=>update('PUT');rp.querySelector('[data-rp-gen]').onclick=()=>update('POST');

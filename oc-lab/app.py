@@ -522,4 +522,5 @@ import templates; templates.init(_sys.modules[__name__],plays); app.register_blu
 import discover; app.register_blueprint(discover.bp)
 import tavern; app.register_blueprint(tavern.bp)
 import demo; demo.init(_sys.modules[__name__]); app.register_blueprint(demo.bp)   # demo：剧情工作台与角色聊天
+import worldbooks; app.register_blueprint(worldbooks.bp)
 if __name__=='__main__': app.run('127.0.0.1',8791,threaded=True)
