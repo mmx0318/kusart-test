@@ -141,6 +141,10 @@ def chat():
   persona={'name':c.get('name'),'role':c.get('role'),'type':c.get('type'),'traits':c.get('traits'),'bio':c.get('bio'),'lore':c.get('lore'),'voice':(c.get('profile') or {}).get('voice')}
   from roleplay import fallback
   persona['互动角色卡']=c.get('roleplay') or fallback(c)
+  story=d.get('story')
+  if isinstance(story,dict):
+    persona['本段故事开局']={'名称':str(story.get('title') or '')[:80],'情境':str(story.get('scene') or '')[:3000]}
+
   from worldbooks import activate
   world_entries,world_trace=activate(c,messages)
   persona['世界观参考资料']=world_entries
