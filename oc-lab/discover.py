@@ -1,5 +1,5 @@
 # 发现页只读取已有角色和素材；浏览不触发生图或角色档案补写。
-import json, os, threading
+import json, os, threading, re
 from pathlib import Path
 from flask import Blueprint, jsonify, send_file, request
 import character_taxonomy as taxonomy
@@ -15,6 +15,16 @@ def catalog_stamp():
 def read(path,default):
     try: return json.loads(path.read_text())
     except (OSError,ValueError): return default
+
+def opening_line(c,greeting):
+    # 优先取原卡开场中的对白，不调用模型改写。
+    from card_text import clean
+    text=clean(str((c.get('roleplay') or {}).get('first_mes') or greeting or ''))
+    text=text.replace('{{char}}',str(c.get('name') or '角色')).replace('{{user}}','你')
+    quoted=re.search(r'[“「「\"]([^”」\"\n]{2,240})[”」\"]',text)
+    if quoted:return quoted.group(1).strip()[:100]
+    lines=[re.sub(r'\*[^*]*\*','',line).strip(' *') for line in text.splitlines()]
+    return next((line[:100] for line in lines if line),'')
 
 @bp.get('/chat')
 def chat_page(): return send_file(ROOT/'chat.html',max_age=0)
@@ -42,7 +52,7 @@ def characters():
         response=build_characters()
         rows=response.get_json()['characters']
         if cards:
-            fields={'id','name','img','category','type','role','summary','classification','adult_only','nsfw_cover'}
+            fields={'id','name','img','category','type','role','summary','classification','adult_only','nsfw_cover','opening'}
             rows=[{k:v for k,v in row.items() if k in fields} for row in rows]
         _catalog_cache[cache_key]=(stamp,rows)
         return jsonify(characters=rows)
@@ -78,7 +88,7 @@ def build_characters():
         motion_key={'御姐':'yujie','甜心':'tianxin','辣妹':'lamei','熟女':'shunv','型男':'xingnan','熟男':'shunan','魅魔':'meimo','兽人':'shouren'}.get(c.get('adult_album_type'))
         motion='adult/cards/'+motion_key+'.mp4' if motion_key and (ROOT/'adult/cards'/(motion_key+'.mp4')).exists() else None
         if not include_adult:nsfw=None;images=[c.get('img')];motion=None
-        rows.append(dict(motion=motion,classification=classification,adult_only=classification['rating']=='nsfw',id=cid,name=c.get('name') or '未命名',img=c.get('img'),cutout=cut,category=category,type=kind,role=c.get('role') or '',summary=p.get('summary') or c.get('bio') or '',greeting=(c.get('roleplay') or {}).get('first_mes') or greeting or '',accent=p.get('accent') or '#ef6595',images=images,nsfw_cover=nsfw,works=len(c.get('works') or [])))
+        rows.append(dict(opening=opening_line(c,greeting),motion=motion,classification=classification,adult_only=classification['rating']=='nsfw',id=cid,name=c.get('name') or '未命名',img=c.get('img'),cutout=cut,category=category,type=kind,role=c.get('role') or '',summary=p.get('summary') or c.get('bio') or '',greeting=(c.get('roleplay') or {}).get('first_mes') or greeting or '',accent=p.get('accent') or '#ef6595',images=images,nsfw_cover=nsfw,works=len(c.get('works') or [])))
     return jsonify(characters=rows)
 
 @bp.post('/discover/api/adult-access')
