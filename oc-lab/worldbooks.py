@@ -162,3 +162,13 @@ def bind(cid):
 def preview():
  data=request.get_json(silent=True) or {};c=char(data.get('cid'));text=str(data.get('text',''))[:10000]
  entries,trace=activate(c,[{'role':'user','content':text}]);return jsonify(trace=trace)
+
+@bp.get('/world/<wid>')
+def world_showcase(wid):
+ doc(wid);return send_file(ROOT/'world-view.html',max_age=0)
+@bp.get('/worlds/browse')
+def world_browser():return send_file(ROOT/'world-view.html',max_age=0)
+@bp.get('/world-view.js')
+def world_view_js():return send_file(ROOT/'world-view.js',max_age=0)
+@bp.get('/world-view.css')
+def world_view_css():return send_file(ROOT/'world-view.css',max_age=0)
