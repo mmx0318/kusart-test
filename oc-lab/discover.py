@@ -47,6 +47,7 @@ def characters():
     view=request.args.get('view','')
     cards=view in ('cards','chat')
     stamp=catalog_stamp(); cache_key=(adult,view)
+    stamp=('import-format-1016',stamp)
     fingerprint=hashlib.sha256(repr(stamp).encode()).hexdigest()
     disk=ROOT/'catalog_cache'/('adult' if adult else 'safe')
     disk=disk.with_name(disk.name+'-'+('chat' if view=='chat' else 'cards' if cards else 'full')+'.json')
