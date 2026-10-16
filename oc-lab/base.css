@@ -561,3 +561,12 @@ body:not(.notes) .sc .stl{display:none}
 
 /* 首页主入口：创建角色与模板库并列，首屏可见。 */
 .home-entry{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:0 auto 24px;width:100%;max-width:760px}.home-entry>span,.home-entry>a{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:72px;border:1px solid var(--border);border-radius:16px;background:white;color:var(--fg);text-decoration:none;font-size:18px;font-weight:700}.home-entry>span{background:var(--tonal);border-color:#efafc9;color:var(--tonal-fg)}.home-entry small{font-size:12px;font-weight:400;color:var(--muted);margin-top:4px}.home-entry>a:hover{border-color:var(--primary);background:#fff5f8}@media(max-width:959px){.home-entry{gap:10px;margin-bottom:18px}.home-entry>span,.home-entry>a{min-height:67px;font-size:16px}.home-entry small{font-size:11px}}
+
+/* 创建完成页：深色主题下明确背景与文字，避免继承浅色组件的白底。 */
+.oc-create-page .dk5 .bubble,.oc-create-page .dk5 .pktip{background:#242630;color:#f3f1f5;border-color:#454552}
+.oc-create-page .dk5 .bubble::after{background:#242630;border-color:#454552}
+.oc-create-page .dk5 .nametag{background:#392332;color:#ffa3c5;border:1px solid #75405a}
+.oc-create-page .dk5 .desc{background:#191b24;color:#c9c4cf;border-color:#454552}
+.oc-create-page .dk5 .toast{background:#242630;color:#d9d5df;border:1px solid #454552}
+.oc-create-page .dk5 .bubble .caret{background:#f3f1f5}
+.oc-create-page .dk5 .chat-arrival{display:flex;align-items:center;justify-content:center;text-decoration:none;margin:0 0 10px;background:#392332;color:#ffa3c5;border:1px solid #75405a}

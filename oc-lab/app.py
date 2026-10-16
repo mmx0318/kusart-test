@@ -428,6 +428,12 @@ def api_save():
   try: c['roleplay']=generate(c,llm)
   except Exception as e: c['roleplay_err']=str(e)[:160]
   json.dump(c,open(os.path.join(HERE,'chars',c['id']+'.json'),'w'),ensure_ascii=False,indent=1)
+  # 新建角色完成互动设定后立即分类，让聊天入口读取到同一份角色。
+  try:
+    import character_taxonomy,sys
+    character_taxonomy.classify(c,sys.modules[__name__])
+  except Exception:
+    app.logger.exception('新建角色分类暂未完成：%s',c['id'])
   vo=(c.get('profile') or {}).get('voice') or []   # 10-09 木木夕：登场气泡用按性格写的「初次见面」台词
   hello=(c.get('roleplay') or {}).get('first_mes') or next((v.get('line') for v in vo if '初次' in (v.get('context') or '')),None) or (vo[0].get('line') if vo else '')
   return jsonify(id=c['id'],url='c/'+c['id'],hello=hello)

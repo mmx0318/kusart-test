@@ -3,7 +3,7 @@
 <title>KusArt · 创建角色 测试站</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@chinese-fonts/xiaolai@3.0.0/dist/Xiaolai/result.css">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&family=Shantell+Sans:wght@500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="base.css?v=1014home-entry">
+<link rel="stylesheet" href="base.css?v=1016arrival">
 <link rel="stylesheet" href="plays.css?v=1010y"><link rel="stylesheet" href="adult.css?v=1011m"><meta name="theme-color" content="#101117">
 <link rel="stylesheet" href="shell.css?v=1014tavern"></head><body><script src="shell.js?v=1015adultentry"></script>
 <div class="top"><img class="logo" src="a/logo.png" alt="KusArt"><span class="tag">真实测试 v0.6</span><span class="sp"></span><span class="cr" id="spent">✦ 本次已用 0</span>
@@ -249,7 +249,7 @@ R[5]=()=>head(5)+`<div style="position:relative;z-index:0;margin:4px 0 2px"><div
 <div class="next">${[['outfit','服装抽卡','抽套衣服换上'],['fortune','运势表情包','抽今日运势'],['pv','出场 PV','15 秒登场动画']].map(x=>`<a href="c/${S.cid}#play=${x[0]}" target="_blank">${x[1]}<small>${x[2]}</small></a>`).join('')}</div>
 <div class="sw" style="margin-top:16px"><div>公开角色主页<small>做完第一个作品后会再问你一次</small></div><div class="tg" onclick="this.classList.toggle('on')"></div></div>
 <div class="sw"><div>允许别人在作品里用 ${esc(S.name)}<small>关闭时，别人只能套用同一个模板、换上自己的角色</small></div><div class="tg" onclick="this.classList.toggle('on')"></div></div>
-<div style="text-align:center;margin:14px 0 4px"><span class="toast">已保存到「我的角色」<img src="a/DROPW.svg"></span></div><div class="cta"><a class="btn" style="text-decoration:none;margin-bottom:10px" href="templates?cid=${encodeURIComponent(S.cid)}">给 ${esc(S.name)} 做第一件作品 →</a><button class="btn2" onclick="window.open('c/${S.cid}','_blank')">查看 ${esc(S.name)} 的角色主页</button><button class="btn2" onclick="reset()">再创建一个</button></div></div></div>`+
+<div style="text-align:center;margin:14px 0 4px"><span class="toast">已保存到「我的角色」<img src="a/DROPW.svg"></span></div><div class="cta"><a class="btn2 chat-arrival" href="chat?cid=${encodeURIComponent(S.cid)}">和 ${esc(S.name)} 聊天 →</a><a class="btn" style="text-decoration:none;margin-bottom:10px" href="templates?cid=${encodeURIComponent(S.cid)}">给 ${esc(S.name)} 做第一件作品 →</a><button class="btn2" onclick="window.open('c/${S.cid}','_blank')">查看 ${esc(S.name)} 的角色主页</button><button class="btn2" onclick="reset()">再创建一个</button></div></div></div>`+
 note('测试版里表情包、三个模板入口、两个开关、「改图」都还是示意，没有接真实接口。角色主页是简化版（同 VI），文案由 Kimi 按设定现写，不是 feat/library-asset-pages-v2 分支的页面。');
 B[5]=()=>{const hb=document.getElementById('hb'),t=document.getElementById('hbt'),im=document.querySelector('.dk5 img.main');if(!hb)return;   // 10-09 木木夕：对话框弹出 + 逐字出现；点角色 Q 弹抖一下、换下一句（循环主页台词库）
  let lines=[hb.dataset.t],li=0,tok=0;
