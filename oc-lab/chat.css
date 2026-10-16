@@ -37,3 +37,15 @@
 .roleplay-editor .rp-scroll{min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:8px 28px 26px;scrollbar-gutter:stable}
 .roleplay-editor .rp-fields textarea{box-sizing:border-box}
 @media(max-width:600px){.roleplay-editor .rp-header{padding:14px 16px 10px}.roleplay-editor .rp-scroll{padding:4px 16px 20px}}
+
+/* 角色侧栏操作：统一为紧凑列表，弱化大按钮边框。 */
+.profile-actions{display:flex;flex-direction:column;margin-top:18px;padding:5px 0;border:1px solid var(--ui-line,#353744);border-radius:14px;overflow:hidden;background:var(--ui-panel,#191b24)}
+#profile .profile-actions .roleplay-entry{display:flex;align-items:center;justify-content:space-between;gap:12px;box-sizing:border-box;width:100%;min-height:44px;margin:0;padding:11px 14px;background:transparent;border:0;border-radius:0;color:var(--ui-text,#f3f1f5);font:inherit;font-size:13px;text-align:left;transition:background .15s}
+#profile .profile-actions .roleplay-entry+.roleplay-entry{border-top:1px solid #ffffff09}
+#profile .profile-actions .roleplay-entry::after{content:'›';font-size:20px;line-height:1;color:var(--ui-muted,#aba6b4)}
+#profile .profile-actions .roleplay-entry:hover{background:var(--ui-raised,#232530)}
+.profile-links{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+#profile .profile-links a{display:flex;align-items:center;justify-content:center;gap:6px;min-height:40px;margin:0;padding:8px 6px;box-sizing:border-box;color:var(--ui-muted,#aba6b4);font-size:12px;text-decoration:none;border-radius:10px;background:transparent}
+#profile .profile-links a::after{content:'↗';font-size:12px;opacity:.7}
+#profile .profile-links a:hover{color:var(--ui-text,#f3f1f5);background:var(--ui-raised,#232530)}
+#profile button:focus-visible,#profile a:focus-visible{outline:2px solid var(--ui-pink,#e83e7e);outline-offset:-3px}
