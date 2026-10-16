@@ -62,3 +62,19 @@ def clean_data(data):
     for key in ('description','personality','scenario','first_mes','mes_example','alternate_greetings','creator_notes'):
         if key in data:data[key]=clean_tree(data[key])
     return data
+
+def spoken_line(value):
+    """展示台词只取一个完整短句；长叙事没有明确引语时不冒充台词。"""
+    text=clean(value or '')
+    if not text:return ''
+    # 优先内层引号，避免把包住整段剧情的外层书名式引号当台词。
+    candidates=re.findall(r'[“"]([^“”"\n]{1,240})[”"]',text)
+    candidates+=re.findall(r'「([^「」\n]{1,240})」',text)
+    if not candidates:
+        if len(text)>140 or '\n' in text or re.search(r'他说|她说|说道|问道|低声|站在|月光|眼睛|抬起|\*',text):return ''
+        candidates=[text]
+    for candidate in candidates:
+        candidate=candidate.strip()
+        sentence=re.split(r'(?<=[。！？!?])',candidate,maxsplit=1)[0].strip()
+        if sentence and len(sentence)<=100:return sentence
+    return ''

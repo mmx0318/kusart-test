@@ -464,6 +464,11 @@ def api_char(cid):
     c=dict(c)
     for field in ('bio','role','profile','roleplay'):
       if field in c:c[field]=clean_tree(c[field])
+  # 台词展示与原始剧情分开：每项只保留可识别的一句口头台词。
+  if isinstance(c.get('profile'),dict):
+    from card_text import spoken_line
+    c=dict(c,profile=dict(c['profile']))
+    c['profile']['voice']=[dict(v,line=line) for v in c['profile'].get('voice',[]) if isinstance(v,dict) and (line:=spoken_line(v.get('line')))]
   return jsonify(c)
 
 # 10-09 木木夕：作者可以编辑主页上的所有内容（测试站不分作者，正式版只给创建者）

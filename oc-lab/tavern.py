@@ -88,10 +88,10 @@ def profile_from_card(data):
     # 无法可靠拆分的设定仍有完整入口，原始角色卡始终另行保留。
     if description:files.append(dict(title='完整人物设定',body=display(description)))
     greeting=data.get('first_mes') or ''
-    voices=([dict(context='初次见面',line=display(greeting))] if greeting else [])
-    voices.extend(dict(context='其他开场',line=display(x)) for x in data.get('alternate_greetings',[]) if isinstance(x,str) and x)
+    voices=([dict(context='初次见面',line=__import__('card_text').spoken_line(display(greeting)))] if greeting else [])
+    voices.extend(dict(context='其他开场',line=__import__('card_text').spoken_line(display(x))) for x in data.get('alternate_greetings',[]) if isinstance(x,str) and x)
     return dict(summary=''.join(overview),epithet=short(identity,48) if identity else '',
-      world=fields.get('所属',''),story=[],voice=voices,
+      world=fields.get('所属',''),story=[],voice=[v for v in voices if v['line']],
       dossier=[dict(label=k,value=fields[k]) for k in ('经历','关系','动机','喜好','厌恶','说话方式') if fields.get(k)],
       attributes=attributes,files=files,signatures=[])
 
