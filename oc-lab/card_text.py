@@ -23,9 +23,13 @@ def clean(value):
     # 部分开场只有仿社交平台状态栏和作者声明，没有实际剧情。
     def drop_social_block(match):
         block=match.group(0)
+        if re.search(r'(?m)^\s*(?:[▶►♫≪≫]|0:00)\s*$',block) and len(re.findall(r'(?m)^\s*(?:[▶►♫≪≫]|0:00)\s*$',block))>=3:return ''
         if '角色状态栏' in block and re.search(r'正在播放|原声|分享',block) and EDITORIAL.search(block):return ''
         return block
     value=re.sub(r'```[\s\S]*?```',drop_social_block,value)
+    # 剥除围栏标记，保留其中可读的剧情，不把语言名显示给用户。
+    value=re.sub(r'(?m)^\s*```[^\n]*$', '',value)
+    value=re.sub(r'<(?:audio|video|button)\b[^>]*>[\s\S]*?</(?:audio|video|button)\s*>','',value,flags=re.I)
 
     value=re.sub(r'!\[[^\]]*\]\([^)]*\)','',value)
     value=re.sub(r'\[([^\]]*)\]\((?:https?://|www\.)[^)]*\)',r'\1',value)

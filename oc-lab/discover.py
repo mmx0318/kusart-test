@@ -101,7 +101,7 @@ def build_characters():
         motion_key={'御姐':'yujie','甜心':'tianxin','辣妹':'lamei','熟女':'shunv','型男':'xingnan','熟男':'shunan','魅魔':'meimo','兽人':'shouren'}.get(c.get('adult_album_type'))
         motion='adult/cards/'+motion_key+'.mp4' if motion_key and (ROOT/'adult/cards'/(motion_key+'.mp4')).exists() else None
         if not include_adult:nsfw=None;images=[c.get('img')];motion=None
-        rows.append(dict(opening=opening_line(c,greeting),motion=motion,classification=classification,adult_only=classification['rating']=='nsfw',id=cid,name=c.get('name') or '未命名',img=c.get('img'),cutout=cut,category=category,type=kind,role=c.get('role') or '',summary=p.get('summary') or c.get('bio') or '',greeting=(c.get('roleplay') or {}).get('first_mes') or greeting or '',accent=p.get('accent') or '#ef6595',images=images,nsfw_cover=nsfw,works=len(c.get('works') or [])))
+        rows.append(dict(opening=opening_line(c,greeting),motion=motion,classification=classification,adult_only=classification['rating']=='nsfw',id=cid,name=c.get('name') or '未命名',img=c.get('img'),cutout=cut,category=category,type=kind,role=c.get('role') or '',summary=p.get('summary') or c.get('bio') or '',greeting=__import__('card_text').clean((c.get('roleplay') or {}).get('first_mes') or greeting or ''),accent=p.get('accent') or '#ef6595',images=images,nsfw_cover=nsfw,works=len(c.get('works') or [])))
     return jsonify(characters=rows)
 
 @bp.post('/discover/api/adult-access')

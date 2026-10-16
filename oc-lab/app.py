@@ -458,6 +458,12 @@ def api_char(cid):
   c=json.load(open(p))
   if 'profile' not in c:   # 10-08 之前存的角色：按新主页结构补一次
     build_page(c); json.dump(c,open(p,'w'),ensure_ascii=False,indent=1)
+  if c.get('tavern_card'):
+    from card_text import clean_tree
+    # 只净化返回的展示字段，原始卡和磁盘资料保留，避免改写用户人设。
+    c=dict(c)
+    for field in ('bio','role','profile','roleplay'):
+      if field in c:c[field]=clean_tree(c[field])
   return jsonify(c)
 
 # 10-09 木木夕：作者可以编辑主页上的所有内容（测试站不分作者，正式版只给创建者）
