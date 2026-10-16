@@ -1,5 +1,5 @@
 const $=s=>document.querySelector(s),E=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-let cid=new URLSearchParams(location.search).get('cid')||'',catalog=[],linked=[],world=null,entryIndex=-1,dirty=false,libraryMode=!cid;
+let cid=new URLSearchParams(location.search).get('cid')||'',catalog=[],linked=[],world=null,entryIndex=-1,dirty=false,libraryMode=!cid,characterRows=[];
 async function api(path,method='GET',body){const r=await fetch(path,{method,headers:{'Content-Type':'application/json'},...(body?{body:JSON.stringify(body)}:{})});if(r.status===401){location.href='login';throw Error('请重新登录')}const d=await r.json();if(!r.ok)throw Error(d.error||'操作失败');return d}
 function status(s){$('#status').textContent=s}function changed(){dirty=true;status('有未保存修改');const b=$('#saveWorld');if(b)b.textContent='保存修改'}
 async function loadList(){const d=await api('api/worlds'+(cid?'?cid='+encodeURIComponent(cid):''));catalog=d.worlds;linked=d.linked;drawList();$('#backChat').href='chat'+(cid?'?cid='+encodeURIComponent(cid):'')}
@@ -19,7 +19,7 @@ function traceText(t){return `本轮使用 ${t.used_bytes} / ${t.budget_bytes} �
 $('#linkedScope').onclick=()=>{libraryMode=false;drawList()};$('#allScope').onclick=()=>{libraryMode=true;drawList()};$('#worldSearch').oninput=drawList;$('#character').onchange=async e=>{if(dirty&&!confirm('有未保存修改，确定切换角色并放弃吗？')){e.target.value=cid;return}dirty=false;world=null;$('#workspace').innerHTML='<p>选择资料以编辑，或新建背景资料。</p>';cid=e.target.value;libraryMode=!cid;history.replaceState(null,'',cid?'worlds?cid='+encodeURIComponent(cid):'worlds');await loadList();if(world&&!dirty)openWorld(world.id)};
 $('#newWorld').onclick=async()=>{if(dirty&&!confirm('放弃未保存的修改？'))return;try{const d=await api('api/worlds','POST',{name:'新背景资料'});dirty=false;await loadList();await openWorld(d.world.id)}catch(e){status(e.message)}};
 window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue=''}});
-(async()=>{try{const d=await api('discover/api/characters?adult=1&view=cards');$('#character').innerHTML='<option value="">选择角色以关联世界观</option>'+d.characters.map(c=>`<option value="${E(c.id)}">${E(c.name)}</option>`).join('');if(cid&&!d.characters.some(c=>c.id===cid))$('#character').insertAdjacentHTML('beforeend',`<option value="${E(cid)}">当前角色</option>`);$('#character').value=cid;await loadList();const wid=new URLSearchParams(location.search).get('world')||linked[0];if(wid)await openWorld(wid)}catch(e){status(e.message)}})();
+(async()=>{try{const d=await api('discover/api/characters?adult=1&view=cards');characterRows=d.characters;$('#character').innerHTML='<option value="">选择角色以关联世界观</option>'+d.characters.map(c=>`<option value="${E(c.id)}">${E(c.name)}</option>`).join('');if(cid&&!d.characters.some(c=>c.id===cid))$('#character').insertAdjacentHTML('beforeend',`<option value="${E(cid)}">当前角色</option>`);$('#character').value=cid;await loadList();const wid=new URLSearchParams(location.search).get('world')||linked[0];if(wid)await openWorld(wid)}catch(e){status(e.message)}})();
 
 async function assistWorld(){
  if(!world)return;const target=world.id,d=document.createElement('dialog');d.className='world-ai-dialog';
@@ -30,3 +30,19 @@ async function assistWorld(){
  box.querySelector('[data-apply]').onclick=()=>{if(world?.id!==target){box.textContent='当前世界观已切换，请重新整理。';return}if(box.querySelector('[data-background]')?.checked)$('#worldStory').value=draft.background;box.querySelectorAll('[data-draft]:checked').forEach(x=>world.entries.push(draft.entries[Number(x.dataset.draft)]));entryIndex=world.entries.length-1;changed();drawEntries();drawEntry();d.close();status('草稿已加入，可继续修改；点击“保存修改”后生效')};
  }catch(e){box.textContent=e.message}finally{if(d.isConnected){button.disabled=false;button.textContent='重新整理'}}};
 }
+
+// 保留原有角色切换逻辑，使用带头像的可搜索面板替代原生长列表。
+(()=>{
+ const select=document.querySelector('#character');if(!select)return;
+ select.hidden=true;const label=select.parentElement;label.classList.add('character-picker-label');
+ const trigger=document.createElement('button');trigger.type='button';trigger.className='character-picker-trigger';trigger.setAttribute('aria-haspopup','dialog');label.after(trigger);
+ const portrait=(c)=>c?.img?`<img src="${E(c.img)}" alt="" loading="lazy">`:`<span class="character-picker-fallback" aria-hidden="true">${E((c?.name||'角')[0])}</span>`;
+ function sync(){const option=select.selectedOptions[0];const row=characterRows.find(x=>x.id===select.value)||{name:option?.textContent||'选择角色'};trigger.innerHTML=portrait(row)+`<span><b>${E(select.value?row.name:'选择角色')}</b><small>切换角色</small></span><i aria-hidden="true">⌄</i>`;trigger.setAttribute('aria-label','当前角色：'+row.name+'，点击切换')}
+ trigger.onclick=()=>{
+  const d=document.createElement('dialog');d.className='character-picker-dialog';d.innerHTML='<header><h2>切换角色</h2><button type="button" aria-label="关闭角色选择">×</button></header><input type="search" placeholder="搜索角色名字…" aria-label="搜索角色"><div class="character-picker-results"></div><p class="character-picker-count"></p>';
+  const input=d.querySelector('input'),list=d.querySelector('.character-picker-results');
+  function draw(){const query=input.value.trim().toLocaleLowerCase();const all=characterRows.filter(c=>c.name.toLocaleLowerCase().includes(query)).sort((a,b)=>Number(b.id===cid)-Number(a.id===cid));list.innerHTML=all.slice(0,60).map(c=>`<button type="button" data-pick="${E(c.id)}" aria-current="${c.id===cid?'true':'false'}">${portrait(c)}<span>${E(c.name)}</span><small>${c.id===cid?'当前':'›'}</small></button>`).join('')||'<p>没有找到角色</p>';d.querySelector('.character-picker-count').textContent=all.length>60?'显示前 60 位，输入名字继续查找':'';list.querySelectorAll('[data-pick]').forEach(b=>b.onclick=async()=>{if(b.dataset.pick===cid){d.close();return}select.value=b.dataset.pick;await select.onchange({target:select});sync();d.close()})}
+  d.querySelector('header button').onclick=()=>d.close();input.oninput=draw;d.onclick=e=>{if(e.target===d)d.close()};d.onclose=()=>{d.remove();trigger.focus()};document.body.append(d);draw();d.showModal();input.focus();
+ };
+ new MutationObserver(sync).observe(select,{childList:true});select.addEventListener('change',sync);sync();
+})();
